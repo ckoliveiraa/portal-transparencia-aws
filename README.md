@@ -27,6 +27,7 @@ API Portal Transparência ──> [Lambda worker em LOTES] ──> S3 RAW (bronz
       Tudo: IAM (least privilege) · CloudWatch (logs) · Terraform (módulo final)
 ```
 
+📐 **Diagrama de arquitetura** (Mermaid + imagem): [`docs/arquitetura-diagrama.md`](docs/arquitetura-diagrama.md).
 Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](docs/arquitetura.md).
 
 ## Trilha de módulos
