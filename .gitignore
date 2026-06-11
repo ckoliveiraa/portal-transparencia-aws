@@ -1,0 +1,35 @@
+# Segredos — NUNCA versionar
+.env
+.env.local
+*.key
+*.pem
+
+# Dados baixados
+data/
+*.csv
+*.xlsx
+*.parquet
+*.json.gz
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# AWS / IaC
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+terraform/build/
+tf.plan
+.aws-sam/
+layer/
+*-layer.zip
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

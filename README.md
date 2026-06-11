@@ -1,0 +1,97 @@
+# Curso prático: Engenharia de Dados na AWS 🛠️☁️
+
+Um **projeto educacional, mão na massa**, que ensina a construir um pipeline de dados
+completo na AWS — do consumo de **API** até a análise em **SQL** — usando dados públicos
+reais do **Portal da Transparência** (Novo Bolsa Família) e do **IBGE** (municípios).
+
+> **Para quem é:** iniciantes em engenharia de dados / AWS.
+> **Como funciona:** cada módulo monta uma peça da arquitetura **primeiro no console**
+> (para você ver e entender o serviço) e, no fim, tudo é recriado em **Terraform** (IaC).
+> **Custo:** focado no **Free Tier** — cada módulo traz o aviso de custo e a limpeza.
+
+## O que você vai construir
+
+```
+IBGE API (1 chamada) ─────> [Lambda dim] ──────> S3 RAW/dim_municipios (5.571)
+                                                       │
+API Portal Transparência ──> [Lambda worker em LOTES] ──> S3 RAW (bronze, JSON)
+ (1 req/município, 30/min)        │   ▲                    raw/ano=/mes=/uf=/cod.json
+                           Secrets Manager │                    │
+                                 │   checkpoint (S3)       [Glue Job PySpark]
+      EventBridge (a cada ~15min)┘   retoma até fechar     limpa+achata+Parquet
+                                      o mês (~14 lotes)    S3 CURATED (silver, ano/mes)
+                                                                │
+                                                   [Glue Crawler → Data Catalog]
+                                                                │
+                                                     Athena (SQL: top 15 +/-)
+      Tudo: IAM (least privilege) · CloudWatch (logs) · Terraform (módulo final)
+```
+
+Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](docs/arquitetura.md).
+
+## Trilha de módulos
+
+| # | Módulo | Você aprende |
+|---|--------|--------------|
+| 00 | [Setup AWS](modulos/00-setup-aws/README.md) | Conta, IAM, MFA, Free Tier, **alarme de billing**, AWS CLI |
+| 01 | [A API e a chave](modulos/01-api-ingestao-local/README.md) | **Apresentação da API, cadastro no gov.br e obtenção da chave**; primeira chamada; coletor local em Python |
+| 02 | [S3 / Data Lake](modulos/02-s3-data-lake/README.md) | Object storage, camadas bronze/silver, particionamento |
+| 03 | [Secrets Manager](modulos/03-secrets-manager/README.md) | Guardar a chave da API com segurança (sem hardcode) |
+| 04 | [Lambda — worker em lotes](modulos/04-lambda-ingestao/README.md) | Serverless, IAM role, Layer, **checkpoint, idempotência, retry 429** |
+| 05 | [EventBridge](modulos/05-eventbridge-agenda/README.md) | Agendamento; re-invocar a Lambda até fechar o mês |
+| 06 | [Glue (PySpark)](modulos/06-glue-transformacao/README.md) | ETL com Spark, achatar JSON, Parquet, partição |
+| 07 | [Glue Crawler / Catalog](modulos/07-glue-catalog-crawler/README.md) | Descoberta de schema, metastore, tabelas |
+| 08 | [Athena](modulos/08-athena-analise/README.md) | SQL serverless; **capstone: top 15 que mais/menos recebem** |
+| 09 | [Terraform (IaC)](modulos/09-terraform-iac/README.md) | Recriar toda a stack como código reprodutível |
+| 10 | [Monitoramento & limpeza](modulos/10-monitoramento-limpeza/README.md) | CloudWatch, custos e **teardown** para não gerar cobrança |
+
+## Estrutura do repositório
+
+```
+portal-transparencia-aws/
+├── README.md                     # este índice
+├── docs/                         # api-limites, api-endpoints, arquitetura
+├── modulos/                      # 00–10: um README didático por módulo
+├── src/
+│   ├── build_dim_municipios.py   # gera a dim (IBGE) — 5.571 municípios
+│   ├── ingestao_api.py           # coletor local dos fatos (p/ entender a API)
+│   └── lambda/
+│       ├── handler.py            # Lambda worker (fatos, em lotes)
+│       ├── handler_dim.py        # Lambda dim (municípios IBGE → S3)
+│       └── requirements.txt
+├── glue/job_bolsa_familia.py     # Glue PySpark: raw JSON → curated Parquet
+├── sql/rankings.sql              # Athena: top 15 mais/menos (+ per capita)
+├── terraform/                    # IaC de toda a stack (módulo 09)
+├── .env / .env.example           # chave da API (NÃO versionada)
+└── data/                         # local, gitignored (dim + amostras raw)
+```
+
+## Começando
+
+1. **Pré-requisitos:** Python 3.11+, uma conta AWS, e a chave da API
+   ([cadastro gov.br](https://portaldatransparencia.gov.br/api-de-dados/cadastrar-email)).
+2. Copie `.env.example` para `.env` e preencha sua chave.
+3. Crie o ambiente local e gere a dim:
+   ```bash
+   python -m venv .venv
+   ./.venv/Scripts/python.exe -m pip install -r src/lambda/requirements.txt
+   ./.venv/Scripts/python.exe src/build_dim_municipios.py
+   ./.venv/Scripts/python.exe src/ingestao_api.py --ano 2024 --mes 1 --uf SP --limite 5
+   ```
+4. Siga os módulos em ordem, do **00** ao **10**.
+
+## Dados & limites da API
+
+| Item | Valor |
+|------|-------|
+| Rate limit (06h–24h) | 30 req/min |
+| Rate limit (00h–06h) | 90 req/min |
+| Estouro de limite | HTTP 429 (retry + backoff) |
+| Fatos por município/mês | 1 registro (`codigoIbge` obrigatório) |
+
+Mais em [`docs/api-limites.md`](docs/api-limites.md) e [`docs/api-endpoints.md`](docs/api-endpoints.md).
+
+## Segurança
+
+- A chave da API **nunca** vai para o Git (`.gitignore`).
+- Localmente fica no `.env`; na AWS, migra para o **Secrets Manager** (Módulo 03).

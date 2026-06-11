@@ -1,0 +1,4 @@
+# Dependências da Lambda worker.
+# boto3 já vem no runtime da Lambda — NÃO precisa empacotar.
+# Apenas 'requests' precisa ir numa Lambda Layer (ou no zip do deploy).
+requests==2.32.3
