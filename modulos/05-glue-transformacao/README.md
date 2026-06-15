@@ -152,7 +152,7 @@ job.commit()
 ## 🪜 Passo a passo (console)
 1. **Subir o script** para o S3: `s3://transparencia-datalake-us-east-1-<projectname>/scripts/job_bolsa_familia.py`.
 2. Glue → *ETL jobs* → *Script editor* → cole/aponte o script. Tipo: **Spark**, Python.
-   Nome do job: `transparencia-glue-bolsa-familia`. **Glue version 4.0**.
+   Nome do job: `transparencia-glue-bolsa-familia`. **Glue version 5.1**.
 3. **IAM Role do Glue** (`transparencia-glue-role`): managed `AWSGlueServiceRole` + inline S3
    (ler `raw/`, escrever/apagar `curated*`, `ListBucket`).
 4. **Job parameters**: adicione
