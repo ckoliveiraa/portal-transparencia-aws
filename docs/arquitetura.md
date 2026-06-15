@@ -74,5 +74,5 @@ rate limiting, retry com backoff, time budget, particionamento**.
 
 ## Fora de escopo (fase 2)
 
-Step Functions (orquestração dos lotes), QuickSight (BI/dashboard), CI/CD (GitHub Actions)
-e o **drill-down por beneficiário** (arquivo de Pagamentos, ~20M linhas/mês).
+QuickSight (BI/dashboard), CI/CD (GitHub Actions) e o **drill-down por beneficiário**
+(arquivo de Pagamentos, ~20M linhas/mês).
