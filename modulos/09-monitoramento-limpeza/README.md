@@ -53,7 +53,12 @@ aws s3 rb s3://transparencia-datalake-us-east-1-<projectname>
 
 ## 🎓 Fim da trilha
 Você construiu um pipeline de dados serverless completo: **API → Lambda → S3 → Glue → Athena**,
-com boas práticas de segurança e custo. Próximos passos (fase 2): Step Functions, QuickSight, CI/CD e
-drill-down por beneficiário.
+com boas práticas de segurança e custo.
+
+➡️ **Quer fechar com chave de ouro?** Encare o
+[Desafio final — auto-check de novos meses](../10-desafio-final-auto-check/README.md): deixe o
+pipeline **autônomo**, detectando e processando cada mês novo sozinho.
+
+Outros próximos passos (fase 2): QuickSight (BI), CI/CD e drill-down por beneficiário.
 
 ⬅️ Voltar ao [índice do curso](../../README.md)

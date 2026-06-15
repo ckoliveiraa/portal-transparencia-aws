@@ -30,6 +30,7 @@ Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](do
 | 07 | [Glue Crawler / Catalog](modulos/07-glue-catalog-crawler/README.md) | Descoberta de schema, metastore, tabelas |
 | 08 | [Athena](modulos/08-athena-analise/README.md) | SQL serverless; **capstone: top 15 que mais/menos recebem** |
 | 09 | [Monitoramento & limpeza](modulos/09-monitoramento-limpeza/README.md) | CloudWatch, custos e **teardown** para não gerar cobrança |
+| 🎓 | [Desafio final — auto-check de novos meses](modulos/10-desafio-final-auto-check/README.md) | **Implementação livre:** detectar mês novo na API e disparar o pipeline sozinho (Scheduler + detector + StartExecution) |
 
 ## Estrutura do repositório
 
