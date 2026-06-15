@@ -1,4 +1,4 @@
-# Módulo 06 — Glue (transformação com PySpark)
+# Módulo 05 — Glue (transformação com PySpark)
 
 ## 🎯 Objetivo
 Transformar os JSONs brutos (RAW) em **Parquet** limpo e particionado (CURATED), pronto para consulta.
@@ -14,10 +14,12 @@ Transformar os JSONs brutos (RAW) em **Parquet** limpo e particionado (CURATED),
   partições novas — **sem crawler e sem `MSCK REPAIR` manual**.
 
 ## ✅ Pré-requisitos
-- Dados RAW no S3 (Módulos 02/04).
-- A tabela `transparencia.bolsa_familia` criada via DDL (Módulo 08) — o job só **adiciona
-  partições** a ela. Se ainda não existir, o job grava o Parquet e só **avisa** no log que não
-  catalogou (catalogará quando a tabela existir).
+- Dados RAW no S3: rode o **worker** (Módulo 04) algumas vezes para ter JSONs em
+  `raw/bolsa_familia/`. Pode ser um mês **parcial** — basta para aprender o ETL; a coleta do mês
+  **completo** é automatizada depois pelo **Step Functions** (Módulo 06).
+- A tabela `transparencia.bolsa_familia` **ainda não precisa existir**: ela é criada via DDL no
+  **Módulo 07** (Athena). Enquanto não existir, o job grava o Parquet normalmente e só **avisa** no
+  log que não catalogou — passa a catalogar (`ADD PARTITION`) assim que a tabela existir.
 
 ## 🧩 O código (já pronto)
 `glue/job_bolsa_familia.py`:
@@ -33,13 +35,13 @@ Transformar os JSONs brutos (RAW) em **Parquet** limpo e particionado (CURATED),
 
 ```python
 """
-Glue Job (PySpark) — Módulo 06.
+Glue Job (PySpark) — Módulo 05.
 
 Lê os JSONs brutos do Bolsa Família na camada RAW, achata a estrutura
 aninhada, normaliza tipos e grava em Parquet na camada CURATED,
 particionado por ano/mes. Ao final, o PRÓPRIO job registra as partições
 novas no Glue Data Catalog (ALTER TABLE ... ADD PARTITION) — sem crawler
-e sem MSCK manual. Assim o Athena (Módulo 08) já enxerga os dados.
+e sem MSCK manual. Assim o Athena (Módulo 07) já enxerga os dados.
 
 RAW     : s3://BUCKET/raw/bolsa_familia/ano=*/mes=*/uf=*/municipio=*.json
 CURATED : s3://BUCKET/curated/bolsa_familia/ano=*/mes=*/  (Parquet)
@@ -50,7 +52,7 @@ Parâmetros do Job (--KEY value):
 Requer o Job parameter --enable-glue-datacatalog (faz o Spark usar o Glue
 Data Catalog como metastore, habilitando o ALTER TABLE ADD PARTITION).
 A tabela transparencia.bolsa_familia precisa existir (criada via DDL,
-Módulo 08) — o job só ADICIONA partições, herdando o schema da tabela.
+Módulo 07) — o job só ADICIONA partições, herdando o schema da tabela.
 
 Observação didática: cada arquivo RAW contém um array com 1 objeto
 (o registro daquele município/mês). Usamos explode() para transformar
@@ -140,7 +142,7 @@ try:
     print(f"Catalogo atualizado: {len(particoes)} particao(oes) -> {particoes}")
 except Exception as e:  # noqa: BLE001 — não falhar o job por causa do catálogo
     print(f"AVISO: nao registrei particoes (a tabela {DATABASE}.{TABLE} existe? "
-          f"crie via DDL no Modulo 08): {e}")
+          f"crie via DDL no Modulo 07): {e}")
 
 job.commit()
 ```
@@ -176,6 +178,6 @@ Devem aparecer arquivos `.parquet` sob `ano=2026/mes=4/`. O log do job imprime a
 - Um job pequeno custa **centavos**. Para economizar: poucos DPUs, dados pequenos, rode sob demanda (não em loop). Lembre de não deixar *development endpoints* ligados.
 
 ## 🧹 Limpeza
-- O job em si não cobra parado; só ao rodar. Remova-o no Módulo 10.
+- O job em si não cobra parado; só ao rodar. Remova-o no Módulo 09.
 
-➡️ Próximo: [Módulo 07 — Glue Crawler / Catalog](../07-glue-catalog-crawler/README.md)
+➡️ Próximo: [Módulo 06 — Step Functions (orquestração)](../06-step-functions-orquestracao/README.md)

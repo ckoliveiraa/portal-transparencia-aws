@@ -1,10 +1,10 @@
-# Módulo 05 — Step Functions (orquestração)
+# Módulo 06 — Step Functions (orquestração)
 
 ## 🎯 Objetivo
 Orquestrar a ingestão de ponta a ponta com uma **máquina de estados**: reinvocar a Lambda
 worker em **lotes** até o mês fechar e, ao concluir, disparar o **Glue** — tudo num fluxo só,
 que **para sozinho**, sem agendador. (O próprio Glue job cataloga as partições, então não há
-passo de crawler — ver Módulo 06.)
+passo de crawler — ver Módulo 05.)
 
 ## 🧠 Conceitos
 - **AWS Step Functions**: serviço de orquestração serverless; você descreve um fluxo como uma
@@ -20,9 +20,8 @@ passo de crawler — ver Módulo 06.)
 
 ## ✅ Pré-requisitos
 - Módulo 04 (Lambda worker funcionando e testada manualmente).
-- Glue job `transparencia-glue-bolsa-familia` criado (Módulo 06) — ele já cataloga as partições
-  ao final. Se ainda não tiver o job, monte a máquina só com o loop de ingestão e adicione o
-  passo do Glue depois.
+- Glue job `transparencia-glue-bolsa-familia` já criado (Módulo 05) — a state machine o dispara
+  no passo `TransformarGlue`, então ele **precisa existir antes** deste módulo.
 
 ## 🧩 A máquina de estados (já pronta)
 [`stepfunctions/ingestao_bolsa_familia.asl.json`](../../stepfunctions/ingestao_bolsa_familia.asl.json):
@@ -155,6 +154,6 @@ aws stepfunctions start-execution \
 
 ## 🧹 Limpeza
 - Não há agendador rodando para sempre: a execução termina sozinha. Para remover de vez:
-  Step Functions → *Delete state machine* (Módulo 10).
+  Step Functions → *Delete state machine* (Módulo 09).
 
-➡️ Próximo: [Módulo 06 — Glue (transformação)](../06-glue-transformacao/README.md)
+➡️ Próximo: [Módulo 07 — Athena + Data Catalog](../07-athena-analise/README.md)

@@ -1,4 +1,4 @@
-# Módulo 09 — 🎓 Desafio final: auto-check de novos meses
+# Módulo 08 — 🎓 Desafio final: auto-check de novos meses
 
 > **Formato diferente dos outros módulos.** Aqui não há passo a passo pronto: é um
 > **desafio de implementação** para você fechar o curso. Damos o objetivo, a arquitetura
@@ -36,11 +36,11 @@ EventBridge Scheduler           Lambda "detector"                 Step Functions
 ```
 
 Reaproveita **tudo** que você já construiu: a state machine `transparencia-ingestao`
-(Módulo 05) faz o trabalho pesado. O detector só decide **se** e **quando** acioná-la.
+(Módulo 06) faz o trabalho pesado. O detector só decide **se** e **quando** acioná-la.
 
 ## ✅ Pré-requisitos
-- Módulos 04–08 concluídos (worker, state machine, Glue, Athena).
-- A state machine `transparencia-ingestao` existente e testada.
+- Módulos 04–07 concluídos (worker, Glue, state machine, Athena).
+- A state machine `transparencia-ingestao` existente e testada (Módulo 06).
 
 ## 📋 Requisitos (o que entregar)
 1. **Lambda `transparencia-detector-mes`** que, a cada invocação:
@@ -181,7 +181,7 @@ E o **Scheduler** precisa de uma role com `lambda:InvokeFunction` no detector.
 ## 🧹 Limpeza
 - Desabilite/exclua o **Scheduler** (`transparencia-detector-diario`) — senão ele sonda a API
   todo dia para sempre.
-- Remova a Lambda detector e a role no teardown (Módulo 10).
+- Remova a Lambda detector e a role no teardown (Módulo 09).
 
-➡️ Próximo: [Módulo 10 — Monitoramento & limpeza](../10-monitoramento-limpeza/README.md)
+➡️ Próximo: [Módulo 09 — Monitoramento & limpeza](../09-monitoramento-limpeza/README.md)
 ⬅️ Voltar ao [índice do curso](../../README.md)

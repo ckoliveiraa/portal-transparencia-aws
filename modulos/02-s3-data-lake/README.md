@@ -49,6 +49,6 @@ Criar os buckets do data lake e subir os dados brutos (dim + fatos) com particio
 - Free Tier: **5 GB** de S3 grátis por 12 meses. Nossos dados são poucos MB → **centavos ou zero**.
 
 ## 🧹 Limpeza
-- Para zerar: `aws s3 rm s3://transparencia-datalake-us-east-1-<projectname>/ --recursive` (cuidado!). Removemos o bucket no Módulo 10.
+- Para zerar: `aws s3 rm s3://transparencia-datalake-us-east-1-<projectname>/ --recursive` (cuidado!). Removemos o bucket no Módulo 09.
 
 ➡️ Próximo: [Módulo 03 — Secrets Manager](../03-secrets-manager/README.md)

@@ -22,7 +22,7 @@ gravando no S3, com **checkpoint**, **idempotência** e **retry de rate limit**.
 - `coletar_municipio()` chama a API com **retry/backoff** em `429`.
 - **Time budget**: `context.get_remaining_time_in_millis()` para parar antes do timeout e salvar o checkpoint.
 - Ao terminar os 5.571, grava `_SUCCESS` e retorna `concluido: true` — é esse campo que o
-  **Step Functions** (Módulo 05) usa para saber que pode parar o loop e seguir pro Glue.
+  **Step Functions** (Módulo 06) usa para saber que pode parar o loop e seguir pro Glue.
 
 <details>
 <summary>📄 <code>src/lambda/handler.py</code> — código completo (clique para copiar)</summary>
@@ -336,7 +336,7 @@ def handler(event, context):
    - **`s3:ListBucket`** no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>` (o bucket, **sem** `/*`);
    - `secretsmanager:GetSecretValue` no ARN do segredo;
    - logs no CloudWatch (já vem no `AWSLambdaBasicExecutionRole`).
-   > 💡 Quem reinvoca o worker em lote é o **Step Functions** (Módulo 05) — a permissão de
+   > 💡 Quem reinvoca o worker em lote é o **Step Functions** (Módulo 06) — a permissão de
    > `lambda:InvokeFunction` fica na role da máquina de estados, não aqui.
    > ⚠️ **Gotcha real:** sem `s3:ListBucket`, um `GetObject` num objeto que **ainda não existe**
    > (o checkpoint na 1ª execução) retorna **`AccessDenied`** em vez de **`NoSuchKey`** — e o código
@@ -366,6 +366,6 @@ def handler(event, context):
 - Lambda: **1M requisições/mês grátis** + 400k GB-s. Nossas ~14 invocações/mês → **zero**.
 
 ## 🧹 Limpeza
-- A função fica para o Módulo 05. Para apagar: Lambda → *Delete function* (faremos no Módulo 10).
+- A função fica para os Módulos 05–06. Para apagar: Lambda → *Delete function* (faremos no Módulo 09).
 
-➡️ Próximo: [Módulo 05 — Step Functions (orquestração)](../05-step-functions-orquestracao/README.md)
+➡️ Próximo: [Módulo 05 — Glue (transformação com PySpark)](../05-glue-transformacao/README.md)

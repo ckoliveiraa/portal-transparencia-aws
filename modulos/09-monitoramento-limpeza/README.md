@@ -1,4 +1,4 @@
-# Módulo 10 — Monitoramento e limpeza
+# Módulo 09 — Monitoramento e limpeza
 
 ## 🎯 Objetivo
 Observar o pipeline (logs/métricas) e **desmontar tudo** para não gerar cobranças.
@@ -22,7 +22,7 @@ Observar o pipeline (logs/métricas) e **desmontar tudo** para não gerar cobran
 > Remova os recursos criados no console, na ordem abaixo:
 
 ```bash
-# 0) Se fez o Desafio final (Módulo 09): apague o Scheduler PRIMEIRO — é o único que
+# 0) Se fez o Desafio final (Módulo 08): apague o Scheduler PRIMEIRO — é o único que
 #    fica sondando a API todo dia para sempre. Depois a Lambda detector.
 aws scheduler delete-schedule --name transparencia-detector-diario
 aws lambda delete-function --function-name transparencia-detector-mes
@@ -34,7 +34,8 @@ aws stepfunctions delete-state-machine \
 # 2) Lambda + Layer
 aws lambda delete-function --function-name SUA-FUNCAO
 
-# 3) Glue: job, crawlers e database
+# 3) Glue: job e database (não há crawler — Option A)
+aws glue delete-job --job-name transparencia-glue-bolsa-familia
 aws glue delete-database --name transparencia
 
 # 4) Secret
@@ -59,7 +60,7 @@ aws s3 rb s3://transparencia-datalake-us-east-1-<projectname>
 ## 🎓 Fim da trilha
 Você construiu um pipeline de dados serverless completo: **API → Lambda → S3 → Glue → Athena**,
 com boas práticas de segurança e custo — e, se encarou o
-[Desafio final (Módulo 09)](../09-desafio-final-auto-check/README.md), ainda o deixou **autônomo**.
+[Desafio final (Módulo 08)](../08-desafio-final-auto-check/README.md), ainda o deixou **autônomo**.
 
 Próximos passos (fase 2): QuickSight (BI), CI/CD e drill-down por beneficiário.
 

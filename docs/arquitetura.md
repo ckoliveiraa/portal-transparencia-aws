@@ -41,10 +41,10 @@ tratado** (otimizado para consulta) é um princípio central de engenharia de da
 | **S3** | Armazenamento do data lake (raw + curated) | 02 |
 | **Secrets Manager** | Guarda a `chave-api-dados` com segurança | 03 |
 | **Lambda** | Computação serverless: ingestão da dim e dos fatos (worker em lotes) | 04 |
-| **Step Functions** | Orquestra: repete o worker em lotes até fechar o mês e dispara o Glue | 05 |
-| **Glue (Job)** | ETL Spark: transforma JSON bruto em Parquet | 06 |
-| **Glue Data Catalog** | Metastore das tabelas; o Glue job registra as partições (`ADD PARTITION`) | 06/07 |
-| **Athena** | Consulta SQL serverless sobre o S3 | 08 |
+| **Glue (Job)** | ETL Spark: transforma JSON bruto em Parquet; registra as partições (`ADD PARTITION`) | 05 |
+| **Step Functions** | Orquestra: repete o worker em lotes até fechar o mês e dispara o Glue | 06 |
+| **Glue Data Catalog** | Metastore das tabelas; criado via DDL no módulo de Athena | 07 |
+| **Athena** | Consulta SQL serverless sobre o S3 | 07 |
 | **CloudWatch** | Logs e métricas das Lambdas e jobs | 04, 09 |
 
 ## Por que a ingestão é em lotes (e não paralela)

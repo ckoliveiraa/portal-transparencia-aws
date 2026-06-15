@@ -1,24 +1,32 @@
-# Módulo 08 — Athena (análise) — 🏆 Capstone
+# Módulo 07 — Athena + Data Catalog — 🏆 Capstone
 
 ## 🎯 Objetivo
-Responder a pergunta do projeto com SQL: **quais os 15 municípios que MAIS e que MENOS recebem** Bolsa Família.
+Catalogar os dados como **tabelas** (Glue Data Catalog) e responder a pergunta do projeto com SQL:
+**quais os 15 municípios que MAIS e que MENOS recebem** Bolsa Família.
 
 ## 🧠 Conceitos
-- **Athena**: consulta SQL **serverless** direto sobre arquivos no S3 (usa o Glue Catalog como schema).
+- **Glue Data Catalog**: o **metastore** — guarda o *schema* (colunas, tipos, partições) das
+  tabelas, **não** os dados (que ficam no S3). É o que o Athena lê para saber o formato dos arquivos.
+- **Database (Glue)**: agrupador lógico de tabelas (ex.: `transparencia`).
+- **Tabela externa (DDL)**: `CREATE EXTERNAL TABLE` aponta para um caminho no S3 e define o schema.
+  Aqui criamos **na mão** (em vez de Crawler) para o aluno **ver o schema explícito**.
+- **`MSCK REPAIR` × `ADD PARTITION`**: o `MSCK` descobre todas as partições de uma vez (1ª carga);
+  depois, o **próprio Glue job** (Módulo 05) registra cada `ano/mes` novo com `ADD PARTITION`.
+- **Athena**: consulta SQL **serverless** direto sobre o S3, usando o Data Catalog como schema.
 - **Você paga por dado escaneado** (~US$ 5/TB) — por isso Parquet + partição economizam muito.
 - **JOIN fato × dimensão**: cruzar `bolsa_familia` com `dim_municipios` para trazer nome/UF/região.
 - **Agregação**: `SUM`/`AVG` + `GROUP BY` para consolidar o ano; `ORDER BY ... LIMIT 15` para o ranking.
 
 ## ✅ Pré-requisitos
-- CURATED em Parquet (Módulo 06) e a dim CSV no S3 (Módulo 02).
-- Tabelas no Catalog — via **Crawler (Módulo 07)** **ou** criadas **na mão** no passo 2 abaixo
-  (foi o que fizemos na prática).
+- CURATED em Parquet (Módulo 05) e a dim CSV no S3 (Módulo 02).
+- As tabelas no Data Catalog são criadas **na mão (DDL)** no passo 2 abaixo — sem Crawler.
 
 ## 🪜 Passo a passo (console)
 1. Athena → *Query editor*. Na 1ª vez, configure o **local de resultados** no S3:
    `s3://transparencia-datalake-us-east-1-<projectname>/athena-results/`
    (*Settings → Manage → Query result location*).
-2. **Catalogar na mão (DDL)** — alternativa ao Crawler; o aluno **vê o schema**. Rode no editor:
+2. **Catalogar na mão (DDL)** — cria o database e as tabelas no Data Catalog; o aluno **vê o
+   schema**. Rode no editor:
    ```sql
    CREATE DATABASE IF NOT EXISTS transparencia;
 
@@ -44,7 +52,7 @@ Responder a pergunta do projeto com SQL: **quais os 15 municípios que MAIS e qu
    LOCATION 's3://transparencia-datalake-us-east-1-<projectname>/raw/dim_municipios/'
    TBLPROPERTIES ('skip.header.line.count'='1');
    ```
-   > 💡 O `MSCK REPAIR TABLE` aqui é só para a **1ª carga**. Depois, o **Glue job** (Módulo 06)
+   > 💡 O `MSCK REPAIR TABLE` aqui é só para a **1ª carga**. Depois, o **Glue job** (Módulo 05)
    > registra cada `ano/mes` novo sozinho (`ADD PARTITION`) — não precisa repetir o MSCK.
 3. Selecione o database `transparencia` e abra [`sql/rankings.sql`](../../sql/rankings.sql)
    (troque `<DB>` por `transparencia`).
@@ -71,7 +79,7 @@ LIMIT 15;
 
 ```sql
 -- =====================================================================
--- Athena — Módulo 08 — Análise: top 15 que MAIS e que MENOS recebem
+-- Athena — Módulo 07 — Análise: top 15 que MAIS e que MENOS recebem
 -- =====================================================================
 -- Pré-requisitos:
 --   - Glue Catalog com as tabelas: bolsa_familia (curated) e dim_municipios
@@ -194,6 +202,6 @@ crie uma `dim_populacao(codigo_ibge, populacao)` e use a última query do `ranki
 - Athena cobra ~US$ 5/TB escaneado. Nossos dados (MBs) → **fração de centavo**. Parquet + partição mantêm isso mínimo.
 
 ## 🧹 Limpeza
-- Esvazie `s3://.../athena-results/` de tempos em tempos (Módulo 10).
+- Esvazie `s3://.../athena-results/` de tempos em tempos (Módulo 09).
 
-➡️ Próximo: [Módulo 09 — Desafio final: auto-check de novos meses](../09-desafio-final-auto-check/README.md)
+➡️ Próximo: [Módulo 08 — Desafio final: auto-check de novos meses](../08-desafio-final-auto-check/README.md)
