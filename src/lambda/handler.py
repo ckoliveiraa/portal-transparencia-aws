@@ -13,20 +13,17 @@ Fluxo de uma invocação:
   4. processa um LOTE respeitando 30 req/min, até acabar o time budget
   5. grava cada município em raw/bolsa_familia/ano=/mes=/uf=/municipio=COD.json
      (IDEMPOTENTE: HeadObject antes de chamar a API; se já existe, pula)
-  6. salva o novo checkpoint; se terminou os 5.571, grava _SUCCESS e
-     DESABILITA o próprio EventBridge Schedule (quando SCHEDULE_NAME está setado)
-  7. retorna o progresso
+  6. salva o novo checkpoint; se terminou os 5.571, grava _SUCCESS
+  7. retorna o progresso (com `concluido`) para o orquestrador decidir o próximo passo
 
 Variáveis de ambiente:
   BUCKET            nome do bucket S3
   SECRET_NAME       nome do segredo no Secrets Manager (chave-api-dados)
   INTERVALO_SEG     intervalo entre chamadas (padrão 2.1 => <=30/min)
   MARGEM_SEG        segundos de folga antes do timeout p/ salvar checkpoint (padrão 30)
-  SCHEDULE_NAME     (opcional) nome do EventBridge Schedule a DESABILITAR ao fechar o
-                    mês, evitando reinvocações inúteis. Se vazio, não mexe no schedule.
 
-EventBridge re-invoca a cada ~15 min até o mês fechar; ao concluir, a própria
-função desliga o agendamento (idempotente — seguro reinvocar).
+Quem reinvoca em lote até o mês fechar é o Step Functions (um Choice no `concluido`),
+que para sozinho ao concluir e então dispara o Glue (idempotente — seguro reinvocar).
 """
 
 from __future__ import annotations
@@ -46,13 +43,11 @@ MAX_TENTATIVAS = 5
 
 s3 = boto3.client("s3")
 secrets = boto3.client("secretsmanager")
-scheduler = boto3.client("scheduler")
 
 BUCKET = os.environ["BUCKET"]
 SECRET_NAME = os.environ.get("SECRET_NAME", "portal-transparencia/chave-api-dados")
 INTERVALO_SEG = float(os.environ.get("INTERVALO_SEG", "2.1"))
 MARGEM_SEG = float(os.environ.get("MARGEM_SEG", "30"))
-SCHEDULE_NAME = os.environ.get("SCHEDULE_NAME")  # opcional: auto-desliga ao concluir
 
 DIM_KEY = "raw/dim_municipios/dim_municipios.csv"
 
@@ -125,34 +120,6 @@ def coletar_municipio(sessao: requests.Session, chave: str, mes_ano: str, codigo
     raise RuntimeError(f"429 persistente em {codigo}")
 
 
-def desligar_schedule() -> None:
-    """Desabilita o EventBridge Schedule p/ não reinvocar após o mês fechar.
-
-    UpdateSchedule substitui a definição inteira, então lemos a atual e
-    reenviamos com State=DISABLED. Falha aqui NÃO derruba a execução (só loga):
-    o pior caso é o schedule continuar ligado (idempotente, barato).
-    """
-    if not SCHEDULE_NAME:
-        return
-    try:
-        atual = scheduler.get_schedule(Name=SCHEDULE_NAME)
-        kwargs = {
-            "Name": SCHEDULE_NAME,
-            "GroupName": atual.get("GroupName", "default"),
-            "State": "DISABLED",
-            "ScheduleExpression": atual["ScheduleExpression"],
-            "FlexibleTimeWindow": atual["FlexibleTimeWindow"],
-            "Target": atual["Target"],
-        }
-        for opt in ("ScheduleExpressionTimezone", "StartDate", "EndDate", "Description"):
-            if atual.get(opt):
-                kwargs[opt] = atual[opt]
-        scheduler.update_schedule(**kwargs)
-        print(f"schedule {SCHEDULE_NAME} DISABLED (mês concluído)")
-    except Exception as e:  # noqa: BLE001 — não falhar a execução por isso
-        print(f"AVISO: não consegui desabilitar o schedule {SCHEDULE_NAME}: {e}")
-
-
 def handler(event, context):
     ano = int(event["ano"])
     mes = int(event["mes"])
@@ -200,7 +167,6 @@ def handler(event, context):
             Key=f"raw/bolsa_familia/ano={ano}/mes={mes:02d}/_SUCCESS",
             Body=b"",
         )
-        desligar_schedule()  # mês fechado -> desliga o agendamento sozinho
 
     resultado = {
         "mes_ano": mes_ano, "total": total, "offset_final": i,

@@ -1,0 +1,57 @@
+{
+  "Comment": "Orquestra a ingestao do Bolsa Familia: repete a Lambda worker em lotes ate o mes fechar (checkpoint + idempotencia) e, ao concluir, dispara o Glue para gerar o curated. Substitui o EventBridge Scheduler — para sozinho quando concluido=true.",
+  "StartAt": "IngestarLote",
+  "States": {
+    "IngestarLote": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "transparencia-ingestao-worker",
+        "Payload": {
+          "ano.$": "$.ano",
+          "mes.$": "$.mes"
+        }
+      },
+      "ResultSelector": {
+        "concluido.$": "$.Payload.concluido",
+        "offset_final.$": "$.Payload.offset_final"
+      },
+      "ResultPath": "$.resultado",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.TooManyRequestsException", "Lambda.ServiceException", "States.TaskFailed"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "MesFechou?"
+    },
+    "MesFechou?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.resultado.concluido",
+          "BooleanEquals": false,
+          "Comment": "Ainda faltam municipios -> processa o proximo lote",
+          "Next": "IngestarLote"
+        }
+      ],
+      "Default": "TransformarGlue"
+    },
+    "TransformarGlue": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "transparencia-glue-bolsa-familia",
+        "Arguments": {
+          "--BUCKET": "transparencia-datalake-us-east-1-<projectname>"
+        }
+      },
+      "Next": "Concluido"
+    },
+    "Concluido": {
+      "Type": "Succeed"
+    }
+  }
+}

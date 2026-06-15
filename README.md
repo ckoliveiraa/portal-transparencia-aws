@@ -26,7 +26,7 @@ Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](do
 | 02 | [S3 / Data Lake](modulos/02-s3-data-lake/README.md) | Object storage, camadas bronze/silver, particionamento |
 | 03 | [Secrets Manager](modulos/03-secrets-manager/README.md) | Guardar a chave da API com segurança (sem hardcode) |
 | 04 | [Lambda — worker em lotes](modulos/04-lambda-ingestao/README.md) | Serverless, IAM role, Layer, **checkpoint, idempotência, retry 429** |
-| 05 | [EventBridge](modulos/05-eventbridge-agenda/README.md) | Agendamento; re-invocar a Lambda até fechar o mês |
+| 05 | [Step Functions](modulos/05-step-functions-orquestracao/README.md) | Orquestração: loop de lotes até fechar o mês + dispara o Glue, e **para sozinho** |
 | 06 | [Glue (PySpark)](modulos/06-glue-transformacao/README.md) | ETL com Spark, achatar JSON, Parquet, partição |
 | 07 | [Glue Crawler / Catalog](modulos/07-glue-catalog-crawler/README.md) | Descoberta de schema, metastore, tabelas |
 | 08 | [Athena](modulos/08-athena-analise/README.md) | SQL serverless; **capstone: top 15 que mais/menos recebem** |
@@ -47,6 +47,7 @@ portal-transparencia-aws/
 │       ├── handler_dim.py        # Lambda dim (municípios IBGE → S3)
 │       └── requirements.txt
 ├── glue/job_bolsa_familia.py     # Glue PySpark: raw JSON → curated Parquet
+├── stepfunctions/                # ASL da máquina de estados (orquestração)
 ├── sql/rankings.sql              # Athena: top 15 mais/menos (+ per capita)
 ├── .env / .env.example           # chave da API (NÃO versionada)
 └── data/                         # local, gitignored (dim + amostras raw)

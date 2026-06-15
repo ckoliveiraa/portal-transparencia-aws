@@ -12,8 +12,8 @@ API Portal Transparência ──> [Lambda worker em LOTES] ──> S3 RAW (bronz
  (1 req/município, 30/min)        │   ▲                    raw/ano=/mes=/uf=/cod.json
                            Secrets Manager │                    │
                                  │   checkpoint (S3)       [Glue Job PySpark]
-      EventBridge (a cada ~15min)┘   retoma até fechar     limpa+achata+Parquet
-                                      o mês (~14 lotes)    S3 CURATED (silver, ano/mes)
+      Step Functions (loop lotes)┘   retoma até fechar     limpa+achata+Parquet
+       Choice(concluido)→Glue        o mês (~14 lotes)    S3 CURATED (silver, ano/mes)
                                                                 │
                                                    [Glue Crawler → Data Catalog]
                                                                 │
@@ -41,7 +41,7 @@ tratado** (otimizado para consulta) é um princípio central de engenharia de da
 | **S3** | Armazenamento do data lake (raw + curated) | 02 |
 | **Secrets Manager** | Guarda a `chave-api-dados` com segurança | 03 |
 | **Lambda** | Computação serverless: ingestão da dim e dos fatos (worker em lotes) | 04 |
-| **EventBridge** | Agendador: re-invoca a Lambda até fechar o mês | 05 |
+| **Step Functions** | Orquestra: repete o worker em lotes até fechar o mês e dispara o Glue | 05 |
 | **Glue (Job)** | ETL Spark: transforma JSON bruto em Parquet | 06 |
 | **Glue (Crawler/Catalog)** | Descobre o schema e cria as tabelas (metastore) | 07 |
 | **Athena** | Consulta SQL serverless sobre o S3 | 08 |

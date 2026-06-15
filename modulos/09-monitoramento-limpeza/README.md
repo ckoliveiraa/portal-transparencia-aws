@@ -22,8 +22,9 @@ Observar o pipeline (logs/métricas) e **desmontar tudo** para não gerar cobran
 > Remova os recursos criados no console, na ordem abaixo:
 
 ```bash
-# 1) Desabilitar/excluir o schedule (senão a Lambda roda para sempre)
-#    EventBridge → Scheduler → Delete schedule
+# 1) Remover a state machine (não fica nada rodando — ela já termina sozinha)
+aws stepfunctions delete-state-machine \
+  --state-machine-arn arn:aws:states:us-east-1:<account>:stateMachine:transparencia-ingestao
 
 # 2) Lambda + Layer
 aws lambda delete-function --function-name SUA-FUNCAO

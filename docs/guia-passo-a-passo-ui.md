@@ -22,7 +22,7 @@
 | 6 | Criar o bucket S3 (data lake) e entender o layout | console AWS | ✅ documentado |
 | 7 | Guardar a chave da API no Secrets Manager | console AWS | ✅ documentado |
 | 8 | Subir as Lambdas (dim + worker): Layer, role, env, teste | console AWS | ✅ documentado |
-| 9 | EventBridge: reinvocar a Lambda até fechar o mês | console AWS | ✅ documentado |
+| 9 | Step Functions: orquestrar lotes até fechar o mês + disparar o Glue | console AWS | ✅ documentado |
 | 10 | Glue (PySpark): raw JSON → curated Parquet | console AWS | ✅ documentado |
 | 11 | Athena: catalogar tabelas e rodar o capstone SQL | console AWS | ✅ documentado |
 | 12 | Monitoramento & teardown | console AWS | ⏳ a fazer |
@@ -437,15 +437,12 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
 ### 8b. Criar a IAM Role da Lambda (least privilege)
 1. 🖱️ IAM → **Roles** → **Create role** → **AWS service** → **Lambda**.
 2. 🖱️ Anexe **`AWSLambdaBasicExecutionRole`** (logs no CloudWatch).
-3. 🖱️ Depois de criar, **Add permissions → Create inline policy** com **4** permissões:
+3. 🖱️ Depois de criar, **Add permissions → Create inline policy** com **3** permissões:
    - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*`
      (objetos);
    - `s3:ListBucket` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>` (o bucket,
      **sem** o `/*`) — ⚠️ veja o box abaixo, é fácil esquecer;
-   - `secretsmanager:GetSecretValue` no ARN do segredo `portal-transparencia/chave-api-dados`;
-   - `scheduler:GetSchedule`, `scheduler:UpdateSchedule` no ARN do schedule
-     `arn:aws:scheduler:us-east-1:<account>:schedule/default/transparencia-ingestao-15min`
-     — é o que permite a função **se auto-desligar** ao fechar o mês (Passo 9c).
+   - `secretsmanager:GetSecretValue` no ARN do segredo `portal-transparencia/chave-api-dados`.
 4. ⌨️ Nome da role: `transparencia-ingestao-worker-role`.
    - 🎬 *Narração:* "A função só pode fazer exatamente isto: ler/escrever no nosso bucket e ler
      um segredo específico. Nada além. Isso é least privilege."
@@ -495,7 +492,6 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
    |-----|-------|
    | `BUCKET` | `transparencia-datalake-us-east-1-<projectname>` |
    | `SECRET_NAME` | `portal-transparencia/chave-api-dados` |
-   | `SCHEDULE_NAME` | `transparencia-ingestao-15min` *(opcional; liga o auto-desligar ao fechar o mês)* |
    | `INTERVALO_SEG` | `2.1` *(opcional; padrão já é 2.1)* |
    | `MARGEM_SEG` | `30` *(opcional; no demo de 60s use `15`)* |
 
@@ -537,104 +533,92 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
 
 ---
 
-## Passo 9 — EventBridge: reinvocar a Lambda até fechar o mês 🔁
+## Passo 9 — Step Functions: orquestrar a ingestão até fechar o mês 🔁
 
-**Objetivo:** em vez de você apertar **Test** ~14 vezes, deixar o **EventBridge Scheduler**
-reinvocar o worker a cada 15 min até o mês inteiro fechar. É seguro porque o checkpoint +
-idempotência (Passo 8) garantem que cada execução **retoma** sem duplicar.
+**Objetivo:** em vez de você apertar **Test** ~14 vezes (ou deixar um agendador rodando pra
+sempre), criar uma **máquina de estados** que reinvoca o worker em lotes até `concluido: true`,
+e então dispara o **Glue** — tudo num fluxo só que **termina sozinho**.
 
-🎬 *Narração:* "A Lambda fecha ~400 municípios por rodada. Para pegar os 5.571 a gente teria
-que clicar 'Test' uma porção de vezes. Em vez disso, um agendador faz isso sozinho: de 15 em
-15 minutos ele cutuca a função, e por causa do checkpoint ela continua exatamente de onde parou."
+🎬 *Narração:* "A Lambda fecha ~400 municípios por rodada. Em vez de clicar 'Test' um monte de
+vezes, a gente desenha um fluxo: chama a função, pergunta 'fechou o mês?'; se não, chama de novo;
+se sim, roda o Glue e acabou. Quem decide parar é o próprio fluxo — não tem agendador ligado à toa."
 
-### 9a. Criar o agendamento
-1. 🖱️ Console → **EventBridge** → **Scheduler** → **Schedules** → **Create schedule**.
-2. ⌨️ Nome: `transparencia-ingestao-15min`.
-3. 🖱️ **Schedule pattern → Recurring schedule → Rate-based** → a cada **15 minutes**.
-   > A 30 req/min, um mês inteiro leva **~14 execuções ≈ 3,5h** de relógio.
-4. 🖱️ **Flexible time window:** Off (não precisa de janela flexível).
-5. 🖱️ **Target → AWS Lambda → Invoke** → função **`transparencia-ingestao-worker`**.
-6. ⌨️ **Payload (input):**
+### 9a. A máquina de estados
+O ASL está em [`stepfunctions/ingestao_bolsa_familia.asl.json`](../../stepfunctions/ingestao_bolsa_familia.asl.json):
+
+```
+IngestarLote (invoke worker) ──> MesFechou? (Choice no concluido)
+        ▲                               │ false
+        └───────────────────────────────┘
+                                        │ true
+                                        ▼
+                          TransformarGlue (startJobRun.sync) ──> Concluido
+```
+
+> ⛓️ O estado `TransformarGlue` usa o Glue job do **Passo 10**. Se ainda não criou o job, monte a
+> máquina só com o loop (`IngestarLote → MesFechou? → Concluido`) e adicione o `TransformarGlue`
+> depois — ou faça o Passo 10 antes.
+
+### 9b. Criar pelo console
+1. 🖱️ Console → **Step Functions** → **State machines** → **Create state machine** → **Standard**
+   (não Express: o fluxo dura horas).
+2. 🖱️ Cole o ASL do arquivo acima (troque `<projectname>` no `--BUCKET`). Nome: `transparencia-ingestao`.
+3. 🖱️ **Permissions:** deixe criar uma role nova (ou use `transparencia-sfn-role`) com
+   `lambda:InvokeFunction` no worker e `glue:StartJobRun`/`glue:GetJobRun`/`glue:BatchStopJobRun`
+   no job — o `.sync` precisa do `GetJobRun` para acompanhar.
+4. 🖱️ **Start execution** com o input:
    ```json
    { "ano": 2026, "mes": 4 }
    ```
-7. 🖱️ Permissão: deixe o Scheduler **criar uma nova role** para invocar a Lambda (padrão).
-   **Create schedule**.
+   - 👀 O gráfico mostra `IngestarLote` repetindo via `MesFechou?` até `concluido: true`,
+     depois `TransformarGlue` (espera o Glue) e `Concluido` (verde).
 
-> 🔑 **Conceito:** quem invoca a Lambda agora **não** é você — é o **Scheduler**. Logo ele
-> precisa de uma **role própria** (trust em `scheduler.amazonaws.com`) com `lambda:InvokeFunction`.
-> No console isso é o "criar nova role" do passo 7; pela CLI a gente cria explicitamente (abaixo).
+> 🔑 **Conceito:** quem invoca a Lambda agora **não** é você nem um agendador — é a **máquina de
+> estados**. Por isso ela tem **role própria** (trust em `states.amazonaws.com`).
+> ⚠️ Para a coleta real do mês inteiro, **suba o timeout do worker para 900s** (a 60s de demo cada
+> lote fecha só ~17 municípios): `aws lambda update-function-configuration --function-name transparencia-ingestao-worker --timeout 900`.
 
-### 9a-CLI. O mesmo agendamento pela CLI
+### 9b-CLI. O mesmo pela CLI
 ```bash
-# 1) Role que o Scheduler assume (trust em scheduler.amazonaws.com)
-cat > scheduler-trust.json <<'JSON'
+# 1) Role que o Step Functions assume (trust em states.amazonaws.com)
+cat > sfn-trust.json <<'JSON'
 { "Version": "2012-10-17", "Statement": [
-  { "Effect": "Allow", "Principal": { "Service": "scheduler.amazonaws.com" }, "Action": "sts:AssumeRole" } ] }
+  { "Effect": "Allow", "Principal": { "Service": "states.amazonaws.com" }, "Action": "sts:AssumeRole" } ] }
 JSON
-aws iam create-role --role-name transparencia-scheduler-role \
-  --assume-role-policy-document file://scheduler-trust.json
+aws iam create-role --role-name transparencia-sfn-role \
+  --assume-role-policy-document file://sfn-trust.json
 
-# 2) Permissão de invocar SÓ o worker (least privilege)
-aws iam put-role-policy --role-name transparencia-scheduler-role --policy-name invoke-worker \
-  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"lambda:InvokeFunction","Resource":"arn:aws:lambda:us-east-1:862717443882:function:transparencia-ingestao-worker"}]}'
+# 2) Permissão de invocar o worker + rodar/acompanhar o Glue
+aws iam put-role-policy --role-name transparencia-sfn-role --policy-name invoke-worker-glue \
+  --policy-document '{"Version":"2012-10-17","Statement":[
+    {"Effect":"Allow","Action":"lambda:InvokeFunction","Resource":"arn:aws:lambda:us-east-1:862717443882:function:transparencia-ingestao-worker"},
+    {"Effect":"Allow","Action":["glue:StartJobRun","glue:GetJobRun","glue:BatchStopJobRun"],"Resource":"*"}]}'
 
-# 3) Cria o agendamento (rate 15 min) apontando para o worker, com o payload fixo
-aws scheduler create-schedule --name transparencia-ingestao-15min \
-  --schedule-expression "rate(15 minutes)" \
-  --flexible-time-window "Mode=OFF" \
-  --target '{"Arn":"arn:aws:lambda:us-east-1:862717443882:function:transparencia-ingestao-worker","RoleArn":"arn:aws:iam::862717443882:role/transparencia-scheduler-role","Input":"{\"ano\": 2026, \"mes\": 4}"}'
+# 3) Cria a state machine a partir do arquivo ASL (troque <projectname> no arquivo antes)
+aws stepfunctions create-state-machine --name transparencia-ingestao \
+  --definition file://stepfunctions/ingestao_bolsa_familia.asl.json \
+  --role-arn arn:aws:iam::862717443882:role/transparencia-sfn-role --type STANDARD
+
+# 4) Dispara a execução para abril/2026
+aws stepfunctions start-execution \
+  --state-machine-arn arn:aws:states:us-east-1:862717443882:stateMachine:transparencia-ingestao \
+  --input '{"ano": 2026, "mes": 4}'
 ```
 
-> 🟢 **Validado ao vivo via CLI:** criei o schedule em `rate(1 minute)` (só para a demo, para
-> não esperar 15 min), **sem invocar nada à mão**, e o checkpoint andou sozinho de **`offset 35` → `52`**
-> em ~75s — prova de que o Scheduler dispara a Lambda. Depois ajustei para `rate(15 minutes)`
-> e deixei **DISABLED** (veja 9c). Comandos para alternar:
-> ```bash
-> aws scheduler update-schedule --name transparencia-ingestao-15min --state ENABLED  ...  # liga
-> aws scheduler get-schedule    --name transparencia-ingestao-15min --query State --output text
-> ```
-> ⚠️ Para uma coleta real do mês inteiro, **suba o timeout do worker para 900s** antes de ligar
-> (a 60s de demo cada disparo fecha só ~17 municípios → levaria dezenas de horas):
-> ```bash
-> aws lambda update-function-configuration --function-name transparencia-ingestao-worker --timeout 900
-> ```
-
-### 9b. Acompanhar até fechar o mês
+### 9c. Acompanhar
 ```bash
-# o offset deve subir a cada 15 min
+# o offset sobe a cada lote; ao fechar, surge o _SUCCESS
 aws s3 cp s3://transparencia-datalake-us-east-1-<projectname>/_checkpoints/202604.json -
+aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/raw/bolsa_familia/ano=2026/mes=04/_SUCCESS
 ```
-- 👀 Quando todos os 5.571 forem processados, surge o marcador:
-  ```bash
-  aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/raw/bolsa_familia/ano=2026/mes=04/_SUCCESS
-  ```
-
-### 9c. ⚠️ Parar o agendamento (importante!)
-O schedule **roda pra sempre** se ninguém parar — o EventBridge não conhece o `_SUCCESS`.
-
-✅ **Auto-desligar (o que fazemos):** com a env var `SCHEDULE_NAME` setada no worker (Passo 8d.5)
-e a permissão `scheduler:UpdateSchedule` na role (Passo 8b), **a própria Lambda** coloca o
-schedule em `DISABLED` assim que fecha o mês (`concluido: true`). Não precisa fazer nada à mão.
-- 🎬 *Narração:* "Fechou o mês, a própria função desliga o agendador. Serverless de verdade:
-  ele se limpa sozinho."
-- 👀 Confira: `aws scheduler get-schedule --name transparencia-ingestao-15min --query State --output text`
-  deve retornar `DISABLED` logo após o `_SUCCESS`.
-
-🔧 **Manual (fallback)**, se você não usou o `SCHEDULE_NAME`:
-1. 🖱️ EventBridge → Scheduler → o schedule → **Disable** (ou **Delete**).
-2. ⌨️ Pela CLI:
-   ```bash
-   aws scheduler update-schedule --name transparencia-ingestao-15min --state DISABLED ...  # desliga (mantém)
-   aws scheduler delete-schedule --name transparencia-ingestao-15min                       # remove de vez
-   ```
 
 ### ✅ Validação do Passo 9
-- O `_checkpoints/202604.json` avança sozinho a cada ~15 min.
-- O marcador `_SUCCESS` aparece ao fim do mês.
-- Schedule **desabilitado** após concluir.
+- A execução percorre `IngestarLote → MesFechou?` em loop e **termina sozinha** em `Concluido`.
+- `_SUCCESS` aparece ao fim do mês; o `TransformarGlue` só fica verde quando o Glue conclui (`.sync`).
+- **Nada continua rodando depois** — não há agendador para desligar. ✅
 
-💲 **Custo:** EventBridge Scheduler dá **14M invocações/mês** grátis → **zero**.
+💲 **Custo:** Step Functions **Standard**: 4.000 transições/mês grátis; nossas ~14 iterações →
+**frações de centavo**. O custo real do fluxo é o do **Glue** (sem Free Tier) e da Lambda (coberta).
 
 ---
 
@@ -820,7 +804,7 @@ Conferência: `2026/4` → **1.360** municípios, R$ **4,78 bi**
 ## Próximos passos (a preencher conforme avançamos)
 
 - **Passo 12** — **Monitoramento & teardown**: CloudWatch, custos e **limpeza** para não gerar
-  cobrança — incluindo apagar **Glue job**, **Secret**, **Scheduler** e esvaziar o **bucket** (módulo 09).
+  cobrança — incluindo apagar **Glue job**, **Secret**, **State machine** e esvaziar o **bucket** (módulo 09).
 
 > 🔁 **Como usamos este doc:** você executa o passo no console/portal, me diz o que
 > apareceu na tela (ou onde travou), e eu ajusto/escrevo o próximo passo aqui com o
