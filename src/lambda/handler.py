@@ -48,6 +48,8 @@ BUCKET = os.environ["BUCKET"]
 SECRET_NAME = os.environ.get("SECRET_NAME", "portal-transparencia/chave-api-dados")
 INTERVALO_SEG = float(os.environ.get("INTERVALO_SEG", "0.34"))
 MARGEM_SEG = float(os.environ.get("MARGEM_SEG", "30"))
+# Backoff ao estourar o limite (429): base maior que o INTERVALO p/ limpar a janela de 1 min.
+BACKOFF_429_SEG = float(os.environ.get("BACKOFF_429_SEG", "5"))
 
 DIM_KEY = "raw/dim_municipios/dim_municipios.csv"
 
@@ -114,7 +116,10 @@ def coletar_municipio(sessao: requests.Session, chave: str, mes_ano: str, codigo
         if resp.status_code == 200:
             return resp.json()
         if resp.status_code == 429:
-            time.sleep(INTERVALO_SEG * (2 ** (tentativa - 1)))
+            # honra Retry-After (segundos) se vier; senão, backoff exponencial
+            espera = float(resp.headers.get("Retry-After",
+                                            BACKOFF_429_SEG * (2 ** (tentativa - 1))))
+            time.sleep(espera)
             continue
         resp.raise_for_status()
     raise RuntimeError(f"429 persistente em {codigo}")

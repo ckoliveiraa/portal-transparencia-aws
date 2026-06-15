@@ -42,7 +42,10 @@ ENDPOINT = "/novo-bolsa-familia-por-municipio"
 
 # A 180 req/min (API restrita) o intervalo mínimo é ~0,33s; usamos 0,34s de margem.
 INTERVALO_SEG = 0.34
-MAX_TENTATIVAS = 5  # tentativas em caso de 429 / erro transitório
+MAX_TENTATIVAS = 5      # tentativas em caso de 429 / erro transitório
+# Se estourar o limite (429), 0,34s não basta para limpar a janela de 1 min:
+# espera a partir de uma base maior (e honra o header Retry-After quando vier).
+BACKOFF_429_SEG = 5.0
 
 
 def carregar_chave() -> str:
@@ -96,7 +99,9 @@ def coletar_municipio(sessao: requests.Session, chave: str, mes_ano: str, codigo
         if resp.status_code == 200:
             return resp.json()
         if resp.status_code == 429:
-            espera = INTERVALO_SEG * (2 ** (tentativa - 1))  # backoff exponencial
+            # honra Retry-After (segundos) se a API mandar; senão, backoff exponencial
+            espera = float(resp.headers.get("Retry-After",
+                                            BACKOFF_429_SEG * (2 ** (tentativa - 1))))
             print(f"  429 (rate limit) em {codigo}; aguardando {espera:.1f}s "
                   f"(tentativa {tentativa}/{MAX_TENTATIVAS})")
             time.sleep(espera)
