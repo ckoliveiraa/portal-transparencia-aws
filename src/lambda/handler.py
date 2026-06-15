@@ -10,7 +10,7 @@ Fluxo de uma invocação:
   1. lê o evento {ano, mes}
   2. lê a dim (lista de trabalho) do S3: raw/dim_municipios/dim_municipios.csv
   3. lê o checkpoint do mês (próximo offset) em _checkpoints/AAAAMM.json
-  4. processa um LOTE respeitando 30 req/min, até acabar o time budget
+  4. processa um LOTE respeitando ~180 req/min, até acabar o time budget
   5. grava cada município em raw/bolsa_familia/ano=/mes=/uf=/municipio=COD.json
      (IDEMPOTENTE: HeadObject antes de chamar a API; se já existe, pula)
   6. salva o novo checkpoint; se terminou os 5.571, grava _SUCCESS
@@ -19,7 +19,7 @@ Fluxo de uma invocação:
 Variáveis de ambiente:
   BUCKET            nome do bucket S3
   SECRET_NAME       nome do segredo no Secrets Manager (chave-api-dados)
-  INTERVALO_SEG     intervalo entre chamadas (padrão 2.1 => <=30/min)
+  INTERVALO_SEG     intervalo entre chamadas (padrão 0.34 => <=180/min)
   MARGEM_SEG        segundos de folga antes do timeout p/ salvar checkpoint (padrão 30)
 
 Quem reinvoca em lote até o mês fechar é o Step Functions (um Choice no `concluido`),
@@ -46,7 +46,7 @@ secrets = boto3.client("secretsmanager")
 
 BUCKET = os.environ["BUCKET"]
 SECRET_NAME = os.environ.get("SECRET_NAME", "portal-transparencia/chave-api-dados")
-INTERVALO_SEG = float(os.environ.get("INTERVALO_SEG", "2.1"))
+INTERVALO_SEG = float(os.environ.get("INTERVALO_SEG", "0.34"))
 MARGEM_SEG = float(os.environ.get("MARGEM_SEG", "30"))
 
 DIM_KEY = "raw/dim_municipios/dim_municipios.csv"

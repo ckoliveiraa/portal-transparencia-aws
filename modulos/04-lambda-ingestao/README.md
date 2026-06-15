@@ -9,7 +9,7 @@ gravando no S3, com **checkpoint**, **idempotência** e **retry de rate limit**.
 - **IAM Role da Lambda**: identidade que dá permissões à função (ler segredo, escrever no S3).
 - **Lambda Layer**: pacote com dependências (aqui, `requests`); `boto3` já vem no runtime.
 - **Variáveis de ambiente**: configuram a função sem mudar o código (`BUCKET`, `SECRET_NAME`...).
-- **Por que lotes**: 5.571 chamadas × ~2s = ~3h > 15 min. Logo, cada invocação faz um pedaço e **retoma** depois.
+- **Por que lotes**: 5.571 chamadas × ~0,34s ≈ ~32 min > 15 min. Logo, cada invocação faz um pedaço e **retoma** depois.
 
 ## ✅ Pré-requisitos
 - Módulos 02 (bucket + dim no S3) e 03 (segredo).
@@ -40,7 +40,7 @@ Fluxo de uma invocação:
   1. lê o evento {ano, mes}
   2. lê a dim (lista de trabalho) do S3: raw/dim_municipios/dim_municipios.csv
   3. lê o checkpoint do mês (próximo offset) em _checkpoints/AAAAMM.json
-  4. processa um LOTE respeitando 30 req/min, até acabar o time budget
+  4. processa um LOTE respeitando ~180 req/min, até acabar o time budget
   5. grava cada município em raw/bolsa_familia/ano=/mes=/uf=/municipio=COD.json
      (IDEMPOTENTE: HeadObject antes de chamar a API; se já existe, pula)
   6. salva o novo checkpoint; se terminou os 5.571, grava _SUCCESS
@@ -49,7 +49,7 @@ Fluxo de uma invocação:
 Variáveis de ambiente:
   BUCKET            nome do bucket S3
   SECRET_NAME       nome do segredo no Secrets Manager (chave-api-dados)
-  INTERVALO_SEG     intervalo entre chamadas (padrão 2.1 => <=30/min)
+  INTERVALO_SEG     intervalo entre chamadas (padrão 0.34 => <=180/min)
   MARGEM_SEG        segundos de folga antes do timeout p/ salvar checkpoint (padrão 30)
 
 Quem reinvoca em lote até o mês fechar é o Step Functions (um Choice no `concluido`),
@@ -76,7 +76,7 @@ secrets = boto3.client("secretsmanager")
 
 BUCKET = os.environ["BUCKET"]
 SECRET_NAME = os.environ.get("SECRET_NAME", "portal-transparencia/chave-api-dados")
-INTERVALO_SEG = float(os.environ.get("INTERVALO_SEG", "2.1"))
+INTERVALO_SEG = float(os.environ.get("INTERVALO_SEG", "0.34"))
 MARGEM_SEG = float(os.environ.get("MARGEM_SEG", "30"))
 
 DIM_KEY = "raw/dim_municipios/dim_municipios.csv"
@@ -354,7 +354,7 @@ def handler(event, context):
      --payload '{}' --cli-binary-format raw-in-base64-out dim.json && cat dim.json
    ```
 7. **Testar o worker** com o evento `{ "ano": 2026, "mes": 4 }`:
-   A primeira execução processa ~400 municípios e salva o checkpoint.
+   A primeira execução processa ~2.500 municípios e salva o checkpoint.
 
 ## 🔍 Validação
 - O retorno mostra `baixados`, `offset_final` e `concluido: false` (ainda faltam municípios).

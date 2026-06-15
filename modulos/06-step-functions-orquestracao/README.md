@@ -15,7 +15,7 @@ passo de crawler — ver Módulo 05.)
 - **Choice**: estado de decisão. Olhamos `concluido` no retorno do worker: se `false`, volta pro
   lote seguinte; se `true`, segue pro Glue. É isso que faz o fluxo **terminar sozinho**.
 - **Por que ainda em lotes**: o Step Functions **não remove** o teto de 15 min da Lambda nem o
-  rate limit. O worker continua processando ~400 municípios por invocação com **checkpoint +
+  rate limit. O worker continua processando ~2.500 municípios por invocação com **checkpoint +
   idempotência** (Módulo 04); o Step Functions só **repete** os lotes e sabe quando parar.
 
 ## ✅ Pré-requisitos

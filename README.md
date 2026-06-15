@@ -71,10 +71,14 @@ portal-transparencia-aws/
 
 | Item | Valor |
 |------|-------|
-| Rate limit (06h–24h) | 30 req/min |
-| Rate limit (00h–06h) | 90 req/min |
+| Rate limit — geral (demais horários) | 400 req/min |
+| Rate limit — geral (00h–06h) | 700 req/min |
+| Rate limit — APIs restritas | 180 req/min |
 | Estouro de limite | HTTP 429 (retry + backoff) |
 | Fatos por município/mês | 1 registro (`codigoIbge` obrigatório) |
+
+> Nosso endpoint `novo-bolsa-familia-por-municipio` é tratado como **restrito (180/min)** por
+> segurança — ver [`docs/api-limites.md`](docs/api-limites.md).
 
 Mais em [`docs/api-limites.md`](docs/api-limites.md) e [`docs/api-endpoints.md`](docs/api-endpoints.md).
 

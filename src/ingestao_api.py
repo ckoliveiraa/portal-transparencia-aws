@@ -8,13 +8,13 @@ a função `coletar_municipio()` é idêntica; só muda "onde gravar"
 
 Conceitos demonstrados:
   - autenticação por header (chave-api-dados)
-  - rate limit (1 req a cada ~2,1s => <= 30/min)
+  - rate limit (1 req a cada ~0,34s => <= 180/min, API restrita)
   - retry com backoff em caso de 429 (Too Many Requests)
   - idempotência (pula município cujo JSON já existe)
   - particionamento estilo data lake: ano=/mes=/uf=
 
 Uso:
-  python src/ingestao_api.py --ano 2026 --mes 4                # país inteiro (~3h)
+  python src/ingestao_api.py --ano 2026 --mes 4                # país inteiro (~30 min)
   python src/ingestao_api.py --ano 2026 --mes 4 --limite 5     # teste rápido
   python src/ingestao_api.py --ano 2026 --mes 4 --uf SP        # só uma UF
 """
@@ -40,8 +40,8 @@ RAW_DIR = RAIZ / "data" / "raw" / "bolsa_familia"
 BASE_URL = "https://api.portaldatransparencia.gov.br/api-de-dados"
 ENDPOINT = "/novo-bolsa-familia-por-municipio"
 
-# A 30 req/min o intervalo mínimo é 2,0s; usamos 2,1s de margem.
-INTERVALO_SEG = 2.1
+# A 180 req/min (API restrita) o intervalo mínimo é ~0,33s; usamos 0,34s de margem.
+INTERVALO_SEG = 0.34
 MAX_TENTATIVAS = 5  # tentativas em caso de 429 / erro transitório
 
 
