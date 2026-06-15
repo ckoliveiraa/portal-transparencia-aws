@@ -1,5 +1,5 @@
 {
-  "Comment": "Orquestra a ingestao do Bolsa Familia: repete a Lambda worker em lotes ate o mes fechar (checkpoint + idempotencia), dispara o Glue para gerar o curated e roda o Crawler para atualizar as particoes no Data Catalog. Para sozinho quando concluido=true.",
+  "Comment": "Orquestra a ingestao do Bolsa Familia: repete a Lambda worker em lotes ate o mes fechar (checkpoint + idempotencia) e, ao concluir, dispara o Glue. O proprio Glue job cataloga as particoes (ADD PARTITION), entao nao ha passo de crawler. Para sozinho quando concluido=true.",
   "StartAt": "IngestarLote",
   "States": {
     "IngestarLote": {
@@ -48,51 +48,7 @@
           "--BUCKET": "transparencia-datalake-us-east-1-<projectname>"
         }
       },
-      "Next": "CatalogarCrawler"
-    },
-    "CatalogarCrawler": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
-      "Parameters": {
-        "Name": "transparencia-bolsa-familia-crawler"
-      },
-      "Catch": [
-        {
-          "ErrorEquals": ["Glue.CrawlerRunningException"],
-          "Comment": "Crawler ja rodando -> so aguarda terminar",
-          "Next": "AguardarCrawler"
-        }
-      ],
-      "Next": "AguardarCrawler"
-    },
-    "AguardarCrawler": {
-      "Type": "Wait",
-      "Seconds": 30,
-      "Next": "EstadoCrawler"
-    },
-    "EstadoCrawler": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
-      "Parameters": {
-        "Name": "transparencia-bolsa-familia-crawler"
-      },
-      "ResultSelector": {
-        "state.$": "$.Crawler.State"
-      },
-      "ResultPath": "$.crawler",
-      "Next": "CrawlerPronto?"
-    },
-    "CrawlerPronto?": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.crawler.state",
-          "StringEquals": "READY",
-          "Comment": "Crawler terminou -> catalogo atualizado",
-          "Next": "Concluido"
-        }
-      ],
-      "Default": "AguardarCrawler"
+      "Next": "Concluido"
     },
     "Concluido": {
       "Type": "Succeed"

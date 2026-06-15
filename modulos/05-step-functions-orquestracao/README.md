@@ -2,30 +2,27 @@
 
 ## 🎯 Objetivo
 Orquestrar a ingestão de ponta a ponta com uma **máquina de estados**: reinvocar a Lambda
-worker em **lotes** até o mês fechar, disparar o **Glue** (transformação) e rodar o **Crawler**
-(atualiza as partições no Data Catalog) — tudo num fluxo só, que **para sozinho**, sem agendador.
+worker em **lotes** até o mês fechar e, ao concluir, disparar o **Glue** — tudo num fluxo só,
+que **para sozinho**, sem agendador. (O próprio Glue job cataloga as partições, então não há
+passo de crawler — ver Módulo 06.)
 
 ## 🧠 Conceitos
 - **AWS Step Functions**: serviço de orquestração serverless; você descreve um fluxo como uma
   **máquina de estados** (state machine) em **ASL** (Amazon States Language, um JSON).
-- **Task**: um estado que executa trabalho — aqui, `lambda:invoke` (o worker),
-  `glue:startJobRun.sync` (o ETL) e chamadas de SDK ao Glue (o crawler).
+- **Task**: um estado que executa trabalho — aqui, `lambda:invoke` (o worker) e
+  `glue:startJobRun.sync` (o ETL).
 - **`.sync`**: o Step Functions **espera** o Glue job terminar antes de seguir (integração síncrona).
-- **Integração SDK + polling**: o **crawler** não tem `.sync`. Então fazemos `startCrawler`, e um
-  laço `Wait → getCrawler → Choice(State == READY?)` espera ele terminar — o mesmo padrão de
-  "polling" que você faria na mão.
-- **Choice**: estado de decisão. Olhamos `concluido` no retorno do worker (loop dos lotes) e o
-  `State` do crawler (espera). É isso que faz o fluxo **terminar sozinho**.
+- **Choice**: estado de decisão. Olhamos `concluido` no retorno do worker: se `false`, volta pro
+  lote seguinte; se `true`, segue pro Glue. É isso que faz o fluxo **terminar sozinho**.
 - **Por que ainda em lotes**: o Step Functions **não remove** o teto de 15 min da Lambda nem o
   rate limit. O worker continua processando ~400 municípios por invocação com **checkpoint +
   idempotência** (Módulo 04); o Step Functions só **repete** os lotes e sabe quando parar.
 
 ## ✅ Pré-requisitos
 - Módulo 04 (Lambda worker funcionando e testada manualmente).
-- Glue job `transparencia-glue-bolsa-familia` criado (Módulo 06).
-- Glue crawler `transparencia-bolsa-familia-crawler` apontando para `curated/bolsa_familia/`
-  (Módulo 07). Se ainda não tiver job/crawler, monte a máquina só com o loop de ingestão e
-  adicione os passos do Glue/Crawler depois.
+- Glue job `transparencia-glue-bolsa-familia` criado (Módulo 06) — ele já cataloga as partições
+  ao final. Se ainda não tiver o job, monte a máquina só com o loop de ingestão e adicione o
+  passo do Glue depois.
 
 ## 🧩 A máquina de estados (já pronta)
 [`stepfunctions/ingestao_bolsa_familia.asl.json`](../../stepfunctions/ingestao_bolsa_familia.asl.json):
@@ -36,16 +33,7 @@ IngestarLote (invoke worker) ──> MesFechou? (Choice no concluido)
         └───────────────────────────────┘
                                         │ true
                                         ▼
-                          TransformarGlue (startJobRun.sync)
-                                        │
-                                        ▼
-              CatalogarCrawler (startCrawler) ──> AguardarCrawler (Wait 30s)
-                                        ▲                    │
-                                        │                    ▼
-                          CrawlerPronto? <── EstadoCrawler (getCrawler)
-                          │ READY
-                          ▼
-                     Concluido (Succeed)
+                          TransformarGlue (startJobRun.sync) ──> Concluido (Succeed)
 ```
 
 <details>
@@ -53,7 +41,7 @@ IngestarLote (invoke worker) ──> MesFechou? (Choice no concluido)
 
 ```json
 {
-  "Comment": "Orquestra a ingestao do Bolsa Familia: repete a Lambda worker em lotes ate o mes fechar (checkpoint + idempotencia), dispara o Glue para gerar o curated e roda o Crawler para atualizar as particoes no Data Catalog. Para sozinho quando concluido=true.",
+  "Comment": "Orquestra a ingestao do Bolsa Familia: repete a Lambda worker em lotes ate o mes fechar (checkpoint + idempotencia) e, ao concluir, dispara o Glue. O proprio Glue job cataloga as particoes (ADD PARTITION), entao nao ha passo de crawler. Para sozinho quando concluido=true.",
   "StartAt": "IngestarLote",
   "States": {
     "IngestarLote": {
@@ -102,51 +90,7 @@ IngestarLote (invoke worker) ──> MesFechou? (Choice no concluido)
           "--BUCKET": "transparencia-datalake-us-east-1-<projectname>"
         }
       },
-      "Next": "CatalogarCrawler"
-    },
-    "CatalogarCrawler": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
-      "Parameters": {
-        "Name": "transparencia-bolsa-familia-crawler"
-      },
-      "Catch": [
-        {
-          "ErrorEquals": ["Glue.CrawlerRunningException"],
-          "Comment": "Crawler ja rodando -> so aguarda terminar",
-          "Next": "AguardarCrawler"
-        }
-      ],
-      "Next": "AguardarCrawler"
-    },
-    "AguardarCrawler": {
-      "Type": "Wait",
-      "Seconds": 30,
-      "Next": "EstadoCrawler"
-    },
-    "EstadoCrawler": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
-      "Parameters": {
-        "Name": "transparencia-bolsa-familia-crawler"
-      },
-      "ResultSelector": {
-        "state.$": "$.Crawler.State"
-      },
-      "ResultPath": "$.crawler",
-      "Next": "CrawlerPronto?"
-    },
-    "CrawlerPronto?": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.crawler.state",
-          "StringEquals": "READY",
-          "Comment": "Crawler terminou -> catalogo atualizado",
-          "Next": "Concluido"
-        }
-      ],
-      "Default": "AguardarCrawler"
+      "Next": "Concluido"
     },
     "Concluido": {
       "Type": "Succeed"
@@ -162,9 +106,7 @@ IngestarLote (invoke worker) ──> MesFechou? (Choice no concluido)
    com permissão para:
    - `lambda:InvokeFunction` no `transparencia-ingestao-worker`;
    - `glue:StartJobRun`, `glue:GetJobRun`, `glue:BatchStopJobRun` no job (o `.sync` precisa do
-     `GetJobRun` para acompanhar);
-   - `glue:StartCrawler`, `glue:GetCrawler` no crawler (`startCrawler` dispara, `getCrawler`
-     é o polling do laço de espera).
+     `GetJobRun` para acompanhar).
 2. **Criar a state machine**: Step Functions → *State machines* → *Create* → **Standard**
    (não Express — o fluxo dura horas).
 3. 🖱️ Cole o ASL de `stepfunctions/ingestao_bolsa_familia.asl.json` (troque `<projectname>` no
@@ -174,8 +116,7 @@ IngestarLote (invoke worker) ──> MesFechou? (Choice no concluido)
    { "ano": 2026, "mes": 4 }
    ```
    - 👀 O gráfico mostra `IngestarLote` rodando em loop com `MesFechou?` até `concluido: true`,
-     depois `TransformarGlue` (espera o Glue), o laço `CatalogarCrawler → AguardarCrawler →
-     EstadoCrawler → CrawlerPronto?` e enfim `Concluido`.
+     depois `TransformarGlue` (espera o Glue) e `Concluido`.
 
 > 🔑 **Sem agendador:** quem repete os lotes é o **Choice** da máquina, e a execução termina
 > sozinha. Para uma cadência mensal automática, um agendador externo (cron) poderia só **iniciar**
@@ -204,8 +145,8 @@ aws stepfunctions start-execution \
   aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/raw/bolsa_familia/ano=2026/mes=04/_SUCCESS
   ```
 - O `TransformarGlue` só fica verde quando o Glue job conclui (graças ao `.sync`).
-- O laço do crawler repete `AguardarCrawler → EstadoCrawler` até `State == READY`; aí o
-  Data Catalog já tem as partições novas (sem `MSCK REPAIR` na mão).
+- Ao terminar, o catálogo já tem as partições novas — o **próprio Glue job** as registra
+  (`ADD PARTITION`), sem crawler nem `MSCK REPAIR` na mão.
 
 ## 💲 Custos / Free Tier
 - Step Functions **Standard**: 4.000 transições/mês grátis; depois ~US$ 0,025/1.000. Nossas

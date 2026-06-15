@@ -14,8 +14,8 @@ API Portal Transparência ──> [Lambda worker em LOTES] ──> S3 RAW (bronz
                                  │   checkpoint (S3)       [Glue Job PySpark]
       Step Functions (loop lotes)┘   retoma até fechar     limpa+achata+Parquet
        Choice(concluido)→Glue        o mês (~14 lotes)    S3 CURATED (silver, ano/mes)
-                                                                │
-                                                   [Glue Crawler → Data Catalog]
+                                                                │  + ADD PARTITION
+                                                          [Glue → Data Catalog]
                                                                 │
                                                      Athena (SQL: top 15 +/-)
       Tudo: IAM (least privilege) · CloudWatch (logs)
@@ -43,7 +43,7 @@ tratado** (otimizado para consulta) é um princípio central de engenharia de da
 | **Lambda** | Computação serverless: ingestão da dim e dos fatos (worker em lotes) | 04 |
 | **Step Functions** | Orquestra: repete o worker em lotes até fechar o mês e dispara o Glue | 05 |
 | **Glue (Job)** | ETL Spark: transforma JSON bruto em Parquet | 06 |
-| **Glue (Crawler/Catalog)** | Descobre o schema e cria as tabelas (metastore) | 07 |
+| **Glue Data Catalog** | Metastore das tabelas; o Glue job registra as partições (`ADD PARTITION`) | 06/07 |
 | **Athena** | Consulta SQL serverless sobre o S3 | 08 |
 | **CloudWatch** | Logs e métricas das Lambdas e jobs | 04, 09 |
 

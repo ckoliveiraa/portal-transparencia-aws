@@ -9,9 +9,15 @@ Transformar os JSONs brutos (RAW) em **Parquet** limpo e particionado (CURATED),
 - **Achatar (flatten)**: transformar JSON aninhado (`municipio.uf.sigla`) em colunas planas (`uf_sigla`).
 - **Parquet**: formato **colunar** e comprimido — muito mais rápido/barato no Athena que JSON.
 - **Partição**: gravar por `ano/mes` permite o Athena ler só o necessário.
+- **Job cataloga sozinho**: ao final, o próprio job roda `ALTER TABLE ... ADD PARTITION` no Glue
+  Data Catalog (precisa do parâmetro `--enable-glue-datacatalog`). Assim o Athena já enxerga as
+  partições novas — **sem crawler e sem `MSCK REPAIR` manual**.
 
 ## ✅ Pré-requisitos
 - Dados RAW no S3 (Módulos 02/04).
+- A tabela `transparencia.bolsa_familia` criada via DDL (Módulo 08) — o job só **adiciona
+  partições** a ela. Se ainda não existir, o job grava o Parquet e só **avisa** no log que não
+  catalogou (catalogará quando a tabela existir).
 
 ## 🧩 O código (já pronto)
 `glue/job_bolsa_familia.py`:
@@ -19,7 +25,8 @@ Transformar os JSONs brutos (RAW) em **Parquet** limpo e particionado (CURATED),
 - `explode()` do array → 1 linha por registro;
 - seleciona/renomeia campos aninhados em colunas planas;
 - deriva `ano`/`mes` da `dataReferencia`;
-- grava Parquet particionado em `curated/bolsa_familia/`.
+- grava Parquet particionado em `curated/bolsa_familia/` (idempotente, *dynamic overwrite*);
+- **registra as partições escritas no Data Catalog** (`ADD IF NOT EXISTS PARTITION`).
 
 <details>
 <summary>📄 <code>glue/job_bolsa_familia.py</code> — código completo (clique para copiar)</summary>
@@ -30,14 +37,20 @@ Glue Job (PySpark) — Módulo 06.
 
 Lê os JSONs brutos do Bolsa Família na camada RAW, achata a estrutura
 aninhada, normaliza tipos e grava em Parquet na camada CURATED,
-particionado por ano/mes. O resultado é catalogado para o Athena
-(Módulo 08) consultar — via Crawler (Módulo 07) ou DDL manual.
+particionado por ano/mes. Ao final, o PRÓPRIO job registra as partições
+novas no Glue Data Catalog (ALTER TABLE ... ADD PARTITION) — sem crawler
+e sem MSCK manual. Assim o Athena (Módulo 08) já enxerga os dados.
 
 RAW     : s3://BUCKET/raw/bolsa_familia/ano=*/mes=*/uf=*/municipio=*.json
 CURATED : s3://BUCKET/curated/bolsa_familia/ano=*/mes=*/  (Parquet)
 
 Parâmetros do Job (--KEY value):
   --BUCKET   nome do bucket S3
+
+Requer o Job parameter --enable-glue-datacatalog (faz o Spark usar o Glue
+Data Catalog como metastore, habilitando o ALTER TABLE ADD PARTITION).
+A tabela transparencia.bolsa_familia precisa existir (criada via DDL,
+Módulo 08) — o job só ADICIONA partições, herdando o schema da tabela.
 
 Observação didática: cada arquivo RAW contém um array com 1 objeto
 (o registro daquele município/mês). Usamos explode() para transformar
@@ -54,6 +67,9 @@ from pyspark.sql import functions as F
 
 args = getResolvedOptions(sys.argv, ["JOB_NAME", "BUCKET"])
 bucket = args["BUCKET"]
+
+DATABASE = "transparencia"
+TABLE = "bolsa_familia"
 
 sc = SparkContext()
 glue = GlueContext(sc)
@@ -110,6 +126,22 @@ final = (
 )
 
 print(f"OK: {final.count()} linhas gravadas em {curated_path}")
+
+# 6) CATALOGA: registra as partições escritas no Data Catalog (Option A).
+#    ADD IF NOT EXISTS é idempotente; herda o schema da tabela (criada no DDL).
+#    Requer --enable-glue-datacatalog. Se a tabela ainda não existe, só avisa.
+particoes = [(r["ano"], r["mes"]) for r in final.select("ano", "mes").distinct().collect()]
+try:
+    for ano_p, mes_p in particoes:
+        spark.sql(
+            f"ALTER TABLE {DATABASE}.{TABLE} "
+            f"ADD IF NOT EXISTS PARTITION (ano={ano_p}, mes={mes_p})"
+        )
+    print(f"Catalogo atualizado: {len(particoes)} particao(oes) -> {particoes}")
+except Exception as e:  # noqa: BLE001 — não falhar o job por causa do catálogo
+    print(f"AVISO: nao registrei particoes (a tabela {DATABASE}.{TABLE} existe? "
+          f"crie via DDL no Modulo 08): {e}")
+
 job.commit()
 ```
 
@@ -121,9 +153,12 @@ job.commit()
    Nome do job: `transparencia-glue-bolsa-familia`. **Glue version 4.0**.
 3. **IAM Role do Glue** (`transparencia-glue-role`): managed `AWSGlueServiceRole` + inline S3
    (ler `raw/`, escrever/apagar `curated*`, `ListBucket`).
-4. **Job parameters**: adicione `--BUCKET = transparencia-datalake-us-east-1-<projectname>`.
+4. **Job parameters**: adicione
+   - `--BUCKET = transparencia-datalake-us-east-1-<projectname>`;
+   - `--enable-glue-datacatalog` (sem valor) — habilita o `ADD PARTITION` no catálogo.
 5. **Workers**: **G.1X**, **2** (volume pequeno).
 6. *Run job* e acompanhe em **Runs**.
+   - 👀 No log: `OK: N linhas gravadas` e `Catalogo atualizado: 1 particao(oes)`.
 
 > ⚠️ **Gotcha real — `curated_$folder$` (403):** o committer do Spark cria um marcador de pasta
 > `curated_$folder$` **na raiz do bucket**, fora de `curated/`. Se a policy liberar só `curated/*`,

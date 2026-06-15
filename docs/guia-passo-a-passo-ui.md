@@ -642,9 +642,16 @@ Glue — um Spark serverless que lê tudo, organiza e regrava num formato bom pr
 1. 🖱️ Suba o script: **S3** → `scripts/job_bolsa_familia.py`.
 2. 🖱️ **Glue** → **ETL jobs** → **Script editor** → tipo **Spark**, Python → aponte o script.
 3. 🖱️ **IAM role do Glue** (ler `raw/`, escrever `curated/`).
-4. ⌨️ **Job details → Job parameters:** `--BUCKET` = `transparencia-datalake-us-east-1-<projectname>`.
+4. ⌨️ **Job details → Job parameters:**
+   - `--BUCKET` = `transparencia-datalake-us-east-1-<projectname>`;
+   - `--enable-glue-datacatalog` (sem valor) — deixa o job registrar as partições no catálogo.
 5. 🖱️ **Workers:** G.1X, **2** (volume pequeno). **Glue version** 4.0.
 6. 🖱️ **Run** e acompanhe em **Runs**.
+
+> 🗂️ **O job cataloga sozinho:** ao final ele roda `ALTER TABLE ... ADD IF NOT EXISTS PARTITION`
+> na tabela `transparencia.bolsa_familia` — sem crawler nem `MSCK` na mão. Como o Glue (Passo 10)
+> roda **antes** de você criar a tabela (DDL, Passo 11), no **1º run** ele só **avisa** no log que
+> a tabela não existe; depois de criada, os runs seguintes catalogam as partições automaticamente.
 
 ### 10c. Pela CLI (o que rodamos)
 ```bash
@@ -663,7 +670,7 @@ aws glue create-job --name transparencia-glue-bolsa-familia \
   --role arn:aws:iam::862717443882:role/transparencia-glue-role \
   --command '{"Name":"glueetl","ScriptLocation":"s3://transparencia-datalake-us-east-1-<projectname>/scripts/job_bolsa_familia.py","PythonVersion":"3"}' \
   --glue-version "4.0" --worker-type G.1X --number-of-workers 2 \
-  --default-arguments '{"--BUCKET":"transparencia-datalake-us-east-1-<projectname>","--enable-continuous-cloudwatch-log":"true","--continuous-log-logGroup":"/aws-glue/jobs/transparencia-bolsa-familia"}'
+  --default-arguments '{"--BUCKET":"transparencia-datalake-us-east-1-<projectname>","--enable-glue-datacatalog":"","--enable-continuous-cloudwatch-log":"true","--continuous-log-logGroup":"/aws-glue/jobs/transparencia-bolsa-familia"}'
 aws glue start-job-run --job-name transparencia-glue-bolsa-familia
 ```
 
@@ -725,7 +732,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS transparencia.bolsa_familia (
 STORED AS PARQUET
 LOCATION 's3://transparencia-datalake-us-east-1-<projectname>/curated/bolsa_familia/';
 
--- registra as partições existentes (ano=/mes=)
+-- registra as partições existentes (ano=/mes=) — só na 1ª vez (o Glue job já cataloga depois)
 MSCK REPAIR TABLE transparencia.bolsa_familia;
 
 -- dimensão: CSV com cabeçalho
@@ -738,8 +745,9 @@ STORED AS TEXTFILE
 LOCATION 's3://transparencia-datalake-us-east-1-<projectname>/raw/dim_municipios/'
 TBLPROPERTIES ('skip.header.line.count'='1');
 ```
-> 💡 `MSCK REPAIR TABLE` é o passo que **descobre as partições** no S3. Sem ele, a tabela existe
-> mas retorna 0 linhas. (Rode de novo sempre que surgir um `ano/mes` novo.)
+> 💡 `MSCK REPAIR TABLE` **descobre as partições** no S3. Você só precisa dele **uma vez** (logo
+> após criar a tabela): a partir daí o **Glue job registra cada `ano/mes` novo sozinho**
+> (`ADD PARTITION`, Passo 10), então não precisa repetir o MSCK a cada mês.
 
 ### 11c. Conferência e capstone
 ```sql

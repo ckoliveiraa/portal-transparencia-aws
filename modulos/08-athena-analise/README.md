@@ -44,7 +44,8 @@ Responder a pergunta do projeto com SQL: **quais os 15 municípios que MAIS e qu
    LOCATION 's3://transparencia-datalake-us-east-1-<projectname>/raw/dim_municipios/'
    TBLPROPERTIES ('skip.header.line.count'='1');
    ```
-   > 💡 Rode o `MSCK REPAIR TABLE` de novo sempre que surgir um `ano/mes` novo no curated.
+   > 💡 O `MSCK REPAIR TABLE` aqui é só para a **1ª carga**. Depois, o **Glue job** (Módulo 06)
+   > registra cada `ano/mes` novo sozinho (`ADD PARTITION`) — não precisa repetir o MSCK.
 3. Selecione o database `transparencia` e abra [`sql/rankings.sql`](../../sql/rankings.sql)
    (troque `<DB>` por `transparencia`).
    - **Conferência** de linhas por mês;

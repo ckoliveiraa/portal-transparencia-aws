@@ -3,11 +3,10 @@
 ## 🎯 Objetivo
 Catalogar os dados do S3 como **tabelas** para o Athena consultar via SQL.
 
-> 🔀 **Duas formas de catalogar — escolha uma:**
-> - **Crawler (automático)** — este módulo: um robô infere o schema e cria as tabelas.
-> - **DDL manual (na mão)** — o que fizemos na prática, direto no editor do Athena
->   (`CREATE EXTERNAL TABLE` + `MSCK REPAIR TABLE`), ótimo para o aluno **ver o schema**.
->   Está no [Módulo 08](../08-athena-analise/README.md). Faça **só uma** das duas.
+> 🔀 **Formas de catalogar — este módulo é didático.** No fluxo automatizado do curso, quem
+> cataloga é o **próprio Glue job** (`ADD PARTITION`, Módulo 06) sobre uma tabela criada por
+> **DDL manual** (`CREATE EXTERNAL TABLE`, Módulo 08). O **Crawler** abaixo é uma **terceira via**
+> (auto-descobre schema e partições) — útil de conhecer, mas **não** é usado pela state machine.
 
 ## 🧠 Conceitos
 - **Glue Data Catalog**: um "metastore" — guarda o **schema** (colunas, tipos, partições) das tabelas, mas **não** os dados (que ficam no S3).
@@ -20,15 +19,11 @@ Catalogar os dados do S3 como **tabelas** para o Athena consultar via SQL.
 
 ## 🪜 Passo a passo (console)
 1. Glue → *Databases* → *Add database*: `transparencia`.
-2. **Crawler dos fatos** (`transparencia-bolsa-familia-crawler`): Glue → *Crawlers* → *Create crawler*.
+2. **Crawler dos fatos**: Glue → *Crawlers* → *Create crawler*.
    - Source: `s3://.../curated/bolsa_familia/`.
    - IAM role com acesso ao bucket (a mesma `transparencia-glue-role` serve).
    - Target database: `transparencia`; prefixo de tabela: (vazio).
    - *Run* → cria a tabela `bolsa_familia` com partições `ano`, `mes`.
-   > 🔗 É **este** crawler que a state machine do [Módulo 05](../05-step-functions-orquestracao/README.md)
-   > roda automaticamente após o Glue. Para ele só **adicionar partições** sem mexer numa tabela já
-   > criada na mão (DDL do Módulo 08), use *Schema change policy* = **Log** e *partições* herdando
-   > da tabela.
 3. **Crawler da dim**: repita apontando para `s3://.../raw/dim_municipios/` → tabela `dim_municipios`.
    > Para CSV, confirme que o crawler detectou o cabeçalho (senão ajuste o classifier).
 

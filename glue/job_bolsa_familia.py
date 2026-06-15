@@ -3,14 +3,20 @@ Glue Job (PySpark) — Módulo 06.
 
 Lê os JSONs brutos do Bolsa Família na camada RAW, achata a estrutura
 aninhada, normaliza tipos e grava em Parquet na camada CURATED,
-particionado por ano/mes. O resultado é catalogado para o Athena
-(Módulo 08) consultar — via Crawler (Módulo 07) ou DDL manual.
+particionado por ano/mes. Ao final, o PRÓPRIO job registra as partições
+novas no Glue Data Catalog (ALTER TABLE ... ADD PARTITION) — sem crawler
+e sem MSCK manual. Assim o Athena (Módulo 08) já enxerga os dados.
 
 RAW     : s3://BUCKET/raw/bolsa_familia/ano=*/mes=*/uf=*/municipio=*.json
 CURATED : s3://BUCKET/curated/bolsa_familia/ano=*/mes=*/  (Parquet)
 
 Parâmetros do Job (--KEY value):
   --BUCKET   nome do bucket S3
+
+Requer o Job parameter --enable-glue-datacatalog (faz o Spark usar o Glue
+Data Catalog como metastore, habilitando o ALTER TABLE ADD PARTITION).
+A tabela transparencia.bolsa_familia precisa existir (criada via DDL,
+Módulo 08) — o job só ADICIONA partições, herdando o schema da tabela.
 
 Observação didática: cada arquivo RAW contém um array com 1 objeto
 (o registro daquele município/mês). Usamos explode() para transformar
@@ -27,6 +33,9 @@ from pyspark.sql import functions as F
 
 args = getResolvedOptions(sys.argv, ["JOB_NAME", "BUCKET"])
 bucket = args["BUCKET"]
+
+DATABASE = "transparencia"
+TABLE = "bolsa_familia"
 
 sc = SparkContext()
 glue = GlueContext(sc)
@@ -83,4 +92,20 @@ final = (
 )
 
 print(f"OK: {final.count()} linhas gravadas em {curated_path}")
+
+# 6) CATALOGA: registra as partições escritas no Data Catalog (Option A).
+#    ADD IF NOT EXISTS é idempotente; herda o schema da tabela (criada no DDL).
+#    Requer --enable-glue-datacatalog. Se a tabela ainda não existe, só avisa.
+particoes = [(r["ano"], r["mes"]) for r in final.select("ano", "mes").distinct().collect()]
+try:
+    for ano_p, mes_p in particoes:
+        spark.sql(
+            f"ALTER TABLE {DATABASE}.{TABLE} "
+            f"ADD IF NOT EXISTS PARTITION (ano={ano_p}, mes={mes_p})"
+        )
+    print(f"Catalogo atualizado: {len(particoes)} particao(oes) -> {particoes}")
+except Exception as e:  # noqa: BLE001 — não falhar o job por causa do catálogo
+    print(f"AVISO: nao registrei particoes (a tabela {DATABASE}.{TABLE} existe? "
+          f"crie via DDL no Modulo 08): {e}")
+
 job.commit()
