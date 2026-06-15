@@ -1,37 +1,33 @@
 <mxfile host="app.diagrams.net">
   <diagram id="v2tkCCVE-HUsTm_g8A6K" name="Arquitetura">
-    <mxGraphModel dx="1951" dy="764" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+    <mxGraphModel dx="2140" dy="836" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-
         <mxCell id="title" parent="1" style="text;strokeColor=none;fillColor=none;fontSize=18;fontStyle=1;align=center;verticalAlign=middle;html=1;" value="Arquitetura de Dados — Novo Bolsa Família (Portal da Transparência)" vertex="1">
           <mxGeometry height="30" width="1400" x="100" y="20" as="geometry" />
         </mxCell>
-
-        <!-- ================= ORQUESTRAÇÃO: STEP FUNCTIONS ================= -->
         <mxCell id="sfn-grp" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;strokeColor=#E7157B;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#E7157B;dashed=0;" value="Orquestração — AWS Step Functions" vertex="1">
-          <mxGeometry height="150" width="1120" x="250" y="70" as="geometry" />
+          <mxGeometry height="560" width="990" x="270" y="90" as="geometry" />
         </mxCell>
-        <mxCell id="sfn-icon" parent="sfn-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F34482;gradientDirection=north;fillColor=#E7157B;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.step_functions;" value="State machine&#xa;transparencia-ingestao" vertex="1">
-          <mxGeometry height="70" width="70" x="40" y="45" as="geometry" />
+        <mxCell id="sfn-icon" parent="sfn-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F34482;gradientDirection=north;fillColor=#E7157B;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.step_functions;" value="State machine" vertex="1">
+          <mxGeometry height="70" width="70" x="459" y="30" as="geometry" />
         </mxCell>
-        <mxCell id="sfn-flow" parent="sfn-grp" style="text;strokeColor=none;fillColor=#FCEFF5;rounded=1;html=1;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" value="Fluxo (ASL): &lt;b&gt;IngestarLote&lt;/b&gt; (invoca Lambda worker) → &lt;b&gt;MêsFechou?&lt;/b&gt; (Choice no checkpoint) — repete o lote até &lt;i&gt;concluido=true&lt;/i&gt; → &lt;b&gt;TransformarGlue&lt;/b&gt; (StartJobRun .sync) → &lt;b&gt;Concluído&lt;/b&gt; (Succeed). &lt;br&gt;Para sozinho ao fechar o mês. Sem EventBridge, sem Crawler." vertex="1">
-          <mxGeometry height="80" width="900" x="160" y="40" as="geometry" />
+        <mxCell id="Ohtc8E1nLAXjdvDj1Im--10" edge="1" parent="1" source="src-grp" target="ing-grp" value="coleta (HTTP)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=light-dark(#000000,#000000);">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- ================= FONTES EXTERNAS ================= -->
         <mxCell id="src-grp" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_generic_blue;strokeColor=#5A6B86;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#5A6B86;dashed=0;" value="Fontes externas" vertex="1">
           <mxGeometry height="360" width="170" x="60" y="280" as="geometry" />
         </mxCell>
         <mxCell id="src-ibge" parent="src-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#5A6B86;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet;" value="IBGE API&#xa;(5.571 municípios)" vertex="1">
           <mxGeometry height="70" width="70" x="50" y="55" as="geometry" />
         </mxCell>
-        <mxCell id="src-portal" parent="src-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#5A6B86;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet_gateway;" value="API Portal da Transparência&#xa;Novo Bolsa Família&#xa;1 req/município · 30 req/min" vertex="1">
+        <mxCell id="src-portal" parent="src-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#5A6B86;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet_gateway;" value="API Portal da Transparência&lt;br&gt;Novo Bolsa Família" vertex="1">
           <mxGeometry height="70" width="70" x="50" y="220" as="geometry" />
         </mxCell>
-
-        <!-- ================= INGESTÃO: COMPUTE SERVERLESS ================= -->
+        <mxCell id="Ohtc8E1nLAXjdvDj1Im--7" edge="1" parent="1" source="ing-grp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=light-dark(#000000,#000000);" target="lake-grp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="ing-grp" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;strokeColor=#ED7100;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#ED7100;dashed=0;" value="Ingestão — Compute serverless (Python 3.14)" vertex="1">
           <mxGeometry height="360" width="290" x="280" y="280" as="geometry" />
         </mxCell>
@@ -44,8 +40,9 @@
         <mxCell id="ing-secret" parent="ing-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#60A337;gradientDirection=north;fillColor=#277116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.secrets_manager;" value="Secrets Manager&#xa;chave-api-dados" vertex="1">
           <mxGeometry height="48" width="48" x="190" y="231" as="geometry" />
         </mxCell>
-
-        <!-- ================= DATA LAKE: S3 ================= -->
+        <mxCell id="Ohtc8E1nLAXjdvDj1Im--8" edge="1" parent="1" source="lake-grp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=light-dark(#000000,#000000);" target="glue-grp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="lake-grp" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;strokeColor=#7AA116;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#7AA116;dashed=0;" value="Data Lake — Amazon S3 (transparencia-datalake)" vertex="1">
           <mxGeometry height="360" width="330" x="620" y="280" as="geometry" />
         </mxCell>
@@ -61,29 +58,38 @@
         <mxCell id="lake-silver" parent="lake-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#60A337;gradientDirection=north;fillColor=#277116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.simple_storage_service;" value="curated/bolsa_familia&#xa;silver · Parquet (snappy)&#xa;ano=/mes=" vertex="1">
           <mxGeometry height="70" width="70" x="200" y="225" as="geometry" />
         </mxCell>
-
-        <!-- ================= TRANSFORMAÇÃO & CATÁLOGO: GLUE ================= -->
+        <mxCell id="Ohtc8E1nLAXjdvDj1Im--2" parent="lake-grp" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" value="" vertex="1">
+          <mxGeometry height="79" width="79" x="36" y="51" as="geometry" />
+        </mxCell>
+        <mxCell id="Ohtc8E1nLAXjdvDj1Im--3" parent="lake-grp" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" value="" vertex="1">
+          <mxGeometry height="79" width="79" x="195.5" y="51" as="geometry" />
+        </mxCell>
+        <mxCell id="Ohtc8E1nLAXjdvDj1Im--4" parent="lake-grp" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" value="" vertex="1">
+          <mxGeometry height="79" width="79" x="40" y="216" as="geometry" />
+        </mxCell>
+        <mxCell id="Ohtc8E1nLAXjdvDj1Im--5" parent="lake-grp" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;" value="" vertex="1">
+          <mxGeometry height="79" width="79" x="195.5" y="220.5" as="geometry" />
+        </mxCell>
+        <mxCell id="Ohtc8E1nLAXjdvDj1Im--9" edge="1" parent="1" source="glue-grp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=light-dark(#000000,#000000);" target="qry-grp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="glue-grp" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;strokeColor=#8C4FFF;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#8C4FFF;dashed=0;" value="Transformação &amp; Catálogo — AWS Glue" vertex="1">
           <mxGeometry height="360" width="220" x="1010" y="280" as="geometry" />
         </mxCell>
-        <mxCell id="glue-job" parent="glue-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#4D72F3;gradientDirection=north;fillColor=#8C4FFF;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.glue;" value="Glue Job (PySpark)&#xa;Glue 4.0 · 2× G.1X&#xa;JSON→Parquet" vertex="1">
+        <mxCell id="glue-job" parent="glue-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#4D72F3;gradientDirection=north;fillColor=#8C4FFF;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.glue;" value="Glue Job (PySpark)&lt;br&gt;Glue 5.1 · 2× G.1X&lt;br&gt;JSON→Parquet" vertex="1">
           <mxGeometry height="70" width="70" x="75" y="60" as="geometry" />
         </mxCell>
         <mxCell id="glue-catalog" parent="glue-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#8C4FFF;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.glue_data_catalog;" value="Glue Data Catalog&#xa;ADD PARTITION&#xa;(job auto-cataloga)" vertex="1">
           <mxGeometry height="60" width="55.38" x="82" y="240" as="geometry" />
         </mxCell>
-
-        <!-- ================= CONSULTA: ATHENA ================= -->
         <mxCell id="qry-grp" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;strokeColor=#8C4FFF;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#8C4FFF;dashed=0;" value="Consulta &amp; Análise" vertex="1">
           <mxGeometry height="200" width="200" x="1290" y="360" as="geometry" />
         </mxCell>
-        <mxCell id="qry-athena" parent="qry-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#4D72F3;gradientDirection=north;fillColor=#8C4FFF;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.athena;" value="Amazon Athena&#xa;db transparencia&#xa;rankings (capstone)" vertex="1">
+        <mxCell id="qry-athena" parent="qry-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#4D72F3;gradientDirection=north;fillColor=#8C4FFF;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.athena;" value="Amazon Athena" vertex="1">
           <mxGeometry height="70" width="70" x="65" y="55" as="geometry" />
         </mxCell>
-
-        <!-- ================= TRANSVERSAL ================= -->
         <mxCell id="cross-grp" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=1;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_security_group;strokeColor=#DD3522;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#DD3522;dashed=0;" value="Transversal — Segurança &amp; Observabilidade" vertex="1">
-          <mxGeometry height="120" width="1210" x="280" y="680" as="geometry" />
+          <mxGeometry height="160" width="1210" x="280" y="680" as="geometry" />
         </mxCell>
         <mxCell id="cross-iam" parent="cross-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F54749;gradientDirection=north;fillColor=#DD3522;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management;" value="IAM&#xa;roles least-privilege&#xa;(worker · dim · sfn · glue)" vertex="1">
           <mxGeometry height="70" width="70" x="300" y="25" as="geometry" />
@@ -91,42 +97,7 @@
         <mxCell id="cross-cw" parent="cross-grp" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=#F54749;gradientDirection=north;fillColor=#E7157B;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch_2;" value="CloudWatch&#xa;logs (Lambda + Glue)&#xa;&amp; métricas" vertex="1">
           <mxGeometry height="70" width="70" x="800" y="25" as="geometry" />
         </mxCell>
-
-        <!-- ================= CONEXÕES ================= -->
-        <mxCell id="e-ibge-dim" parent="1" source="src-ibge" target="ing-dim" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" value="GET municípios">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-portal-worker" parent="1" source="src-portal" target="ing-worker" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" value="GET bolsa família">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-secret-worker" parent="1" source="ing-secret" target="ing-worker" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;" value="chave API">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-sfn-worker" parent="1" source="sfn-icon" target="ing-worker" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#E7157B;" value="invoke (lote)">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-sfn-glue" parent="1" source="sfn-icon" target="glue-job" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#E7157B;" value="StartJobRun .sync">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-dim-s3" parent="1" source="ing-dim" target="lake-dim" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" value="PutObject">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-worker-bronze" parent="1" source="ing-worker" target="lake-bronze" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" value="grava JSON">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-worker-chk" parent="1" source="ing-worker" target="lake-chk" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=block;endArrow=block;dashed=1;" value="lê/grava checkpoint">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-bronze-glue" parent="1" source="lake-bronze" target="glue-job" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" value="lê bronze">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-glue-silver" parent="1" source="glue-job" target="lake-silver" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" value="escreve Parquet">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-silver-athena" parent="1" source="lake-silver" target="qry-athena" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" value="scan Parquet">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-catalog-athena" parent="1" source="glue-catalog" target="qry-athena" edge="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;" value="metadados/partições">
+        <mxCell id="e-secret-worker" edge="1" parent="1" source="ing-secret" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;dashed=1;" target="ing-worker" value="chave API">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
