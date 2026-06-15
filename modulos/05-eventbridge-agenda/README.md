@@ -26,10 +26,14 @@ Automatizar a ingestão: re-invocar a Lambda periodicamente até o mês fechar (
    > (trust em `scheduler.amazonaws.com`).
 
 ### Quando parar
-Quando a Lambda gravar `_SUCCESS` (mês completo), as próximas execuções só verão
-`pulados` (idempotência) — barato, mas inútil. Opções:
-- **desabilitar** o schedule manualmente após o `_SUCCESS`; ou
-- (avançado, fase 2) usar **Step Functions** para orquestrar e parar sozinho.
+O EventBridge **não para sozinho**: ele dispara para sempre até alguém desligar. Quando a
+Lambda grava `_SUCCESS` (mês completo), as próximas execuções só veriam `pulados`
+(idempotência) — barato, mas inútil. Como paramos:
+- **Auto-desligar (o que fazemos):** ao concluir o mês, a própria Lambda chama
+  `scheduler:UpdateSchedule` e coloca o schedule em `DISABLED` (via a env var
+  `SCHEDULE_NAME` + permissão na role — ver Módulo 04). Combina com o estilo serverless.
+- **Manual:** desabilitar/excluir o schedule no console após o `_SUCCESS` (fallback).
+- (avançado, fase 2) **Step Functions** para orquestrar e parar sozinho.
 
 ## 🔍 Validação
 - Acompanhe o checkpoint subir a cada 15 min:

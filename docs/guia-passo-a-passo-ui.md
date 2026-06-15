@@ -437,12 +437,15 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
 ### 8b. Criar a IAM Role da Lambda (least privilege)
 1. 🖱️ IAM → **Roles** → **Create role** → **AWS service** → **Lambda**.
 2. 🖱️ Anexe **`AWSLambdaBasicExecutionRole`** (logs no CloudWatch).
-3. 🖱️ Depois de criar, **Add permissions → Create inline policy** com **3** permissões:
+3. 🖱️ Depois de criar, **Add permissions → Create inline policy** com **4** permissões:
    - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*`
      (objetos);
    - `s3:ListBucket` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>` (o bucket,
      **sem** o `/*`) — ⚠️ veja o box abaixo, é fácil esquecer;
-   - `secretsmanager:GetSecretValue` no ARN do segredo `portal-transparencia/chave-api-dados`.
+   - `secretsmanager:GetSecretValue` no ARN do segredo `portal-transparencia/chave-api-dados`;
+   - `scheduler:GetSchedule`, `scheduler:UpdateSchedule` no ARN do schedule
+     `arn:aws:scheduler:us-east-1:<account>:schedule/default/transparencia-ingestao-15min`
+     — é o que permite a função **se auto-desligar** ao fechar o mês (Passo 9c).
 4. ⌨️ Nome da role: `transparencia-ingestao-worker-role`.
    - 🎬 *Narração:* "A função só pode fazer exatamente isto: ler/escrever no nosso bucket e ler
      um segredo específico. Nada além. Isso é least privilege."
@@ -492,6 +495,7 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
    |-----|-------|
    | `BUCKET` | `transparencia-datalake-us-east-1-<projectname>` |
    | `SECRET_NAME` | `portal-transparencia/chave-api-dados` |
+   | `SCHEDULE_NAME` | `transparencia-ingestao-15min` *(opcional; liga o auto-desligar ao fechar o mês)* |
    | `INTERVALO_SEG` | `2.1` *(opcional; padrão já é 2.1)* |
    | `MARGEM_SEG` | `30` *(opcional; no demo de 60s use `15`)* |
 
@@ -607,11 +611,18 @@ aws s3 cp s3://transparencia-datalake-us-east-1-<projectname>/_checkpoints/20260
   ```
 
 ### 9c. ⚠️ Parar o agendamento (importante!)
-Depois do `_SUCCESS`, as próximas execuções só veem `pulados` (barato, mas inútil) — e
-o schedule **roda pra sempre** se você não parar.
+O schedule **roda pra sempre** se ninguém parar — o EventBridge não conhece o `_SUCCESS`.
+
+✅ **Auto-desligar (o que fazemos):** com a env var `SCHEDULE_NAME` setada no worker (Passo 8d.5)
+e a permissão `scheduler:UpdateSchedule` na role (Passo 8b), **a própria Lambda** coloca o
+schedule em `DISABLED` assim que fecha o mês (`concluido: true`). Não precisa fazer nada à mão.
+- 🎬 *Narração:* "Fechou o mês, a própria função desliga o agendador. Serverless de verdade:
+  ele se limpa sozinho."
+- 👀 Confira: `aws scheduler get-schedule --name transparencia-ingestao-15min --query State --output text`
+  deve retornar `DISABLED` logo após o `_SUCCESS`.
+
+🔧 **Manual (fallback)**, se você não usou o `SCHEDULE_NAME`:
 1. 🖱️ EventBridge → Scheduler → o schedule → **Disable** (ou **Delete**).
-   - 🎬 *Narração:* "Terminou o mês? Desliga o agendador. Senão ele fica rodando à toa —
-     barato, mas é desleixo, e a gente não deixa recurso ligado sem motivo."
 2. ⌨️ Pela CLI:
    ```bash
    aws scheduler update-schedule --name transparencia-ingestao-15min --state DISABLED ...  # desliga (mantém)

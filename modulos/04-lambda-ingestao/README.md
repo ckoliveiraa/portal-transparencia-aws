@@ -21,7 +21,8 @@ gravando no S3, com **checkpoint**, **idempotência** e **retry de rate limit**.
 - `ja_existe()` faz `HeadObject` → **idempotência**.
 - `coletar_municipio()` chama a API com **retry/backoff** em `429`.
 - **Time budget**: `context.get_remaining_time_in_millis()` para parar antes do timeout e salvar o checkpoint.
-- Ao terminar os 5.571, grava `_SUCCESS`.
+- Ao terminar os 5.571, grava `_SUCCESS` e — se `SCHEDULE_NAME` estiver setado —
+  `desligar_schedule()` **desabilita o próprio EventBridge Schedule** (não reinvoca à toa).
 
 <details>
 <summary>📄 <code>src/lambda/handler.py</code> — código completo (clique para copiar)</summary>
@@ -42,7 +43,8 @@ Fluxo de uma invocação:
   4. processa um LOTE respeitando 30 req/min, até acabar o time budget
   5. grava cada município em raw/bolsa_familia/ano=/mes=/uf=/municipio=COD.json
      (IDEMPOTENTE: HeadObject antes de chamar a API; se já existe, pula)
-  6. salva o novo checkpoint; se terminou os 5.571, grava _SUCCESS
+  6. salva o novo checkpoint; se terminou os 5.571, grava _SUCCESS e
+     DESABILITA o próprio EventBridge Schedule (quando SCHEDULE_NAME está setado)
   7. retorna o progresso
 
 Variáveis de ambiente:
@@ -50,8 +52,11 @@ Variáveis de ambiente:
   SECRET_NAME       nome do segredo no Secrets Manager (chave-api-dados)
   INTERVALO_SEG     intervalo entre chamadas (padrão 2.1 => <=30/min)
   MARGEM_SEG        segundos de folga antes do timeout p/ salvar checkpoint (padrão 30)
+  SCHEDULE_NAME     (opcional) nome do EventBridge Schedule a DESABILITAR ao fechar o
+                    mês, evitando reinvocações inúteis. Se vazio, não mexe no schedule.
 
-EventBridge re-invoca a cada ~15 min até o mês fechar (idempotente).
+EventBridge re-invoca a cada ~15 min até o mês fechar; ao concluir, a própria
+função desliga o agendamento (idempotente — seguro reinvocar).
 """
 
 from __future__ import annotations
@@ -71,11 +76,13 @@ MAX_TENTATIVAS = 5
 
 s3 = boto3.client("s3")
 secrets = boto3.client("secretsmanager")
+scheduler = boto3.client("scheduler")
 
 BUCKET = os.environ["BUCKET"]
 SECRET_NAME = os.environ.get("SECRET_NAME", "portal-transparencia/chave-api-dados")
 INTERVALO_SEG = float(os.environ.get("INTERVALO_SEG", "2.1"))
 MARGEM_SEG = float(os.environ.get("MARGEM_SEG", "30"))
+SCHEDULE_NAME = os.environ.get("SCHEDULE_NAME")  # opcional: auto-desliga ao concluir
 
 DIM_KEY = "raw/dim_municipios/dim_municipios.csv"
 
@@ -148,6 +155,34 @@ def coletar_municipio(sessao: requests.Session, chave: str, mes_ano: str, codigo
     raise RuntimeError(f"429 persistente em {codigo}")
 
 
+def desligar_schedule() -> None:
+    """Desabilita o EventBridge Schedule p/ não reinvocar após o mês fechar.
+
+    UpdateSchedule substitui a definição inteira, então lemos a atual e
+    reenviamos com State=DISABLED. Falha aqui NÃO derruba a execução (só loga):
+    o pior caso é o schedule continuar ligado (idempotente, barato).
+    """
+    if not SCHEDULE_NAME:
+        return
+    try:
+        atual = scheduler.get_schedule(Name=SCHEDULE_NAME)
+        kwargs = {
+            "Name": SCHEDULE_NAME,
+            "GroupName": atual.get("GroupName", "default"),
+            "State": "DISABLED",
+            "ScheduleExpression": atual["ScheduleExpression"],
+            "FlexibleTimeWindow": atual["FlexibleTimeWindow"],
+            "Target": atual["Target"],
+        }
+        for opt in ("ScheduleExpressionTimezone", "StartDate", "EndDate", "Description"):
+            if atual.get(opt):
+                kwargs[opt] = atual[opt]
+        scheduler.update_schedule(**kwargs)
+        print(f"schedule {SCHEDULE_NAME} DISABLED (mês concluído)")
+    except Exception as e:  # noqa: BLE001 — não falhar a execução por isso
+        print(f"AVISO: não consegui desabilitar o schedule {SCHEDULE_NAME}: {e}")
+
+
 def handler(event, context):
     ano = int(event["ano"])
     mes = int(event["mes"])
@@ -195,6 +230,7 @@ def handler(event, context):
             Key=f"raw/bolsa_familia/ano={ano}/mes={mes:02d}/_SUCCESS",
             Body=b"",
         )
+        desligar_schedule()  # mês fechado -> desliga o agendamento sozinho
 
     resultado = {
         "mes_ano": mes_ano, "total": total, "offset_final": i,
@@ -324,11 +360,19 @@ def handler(event, context):
    - **Layers → Add a layer:** *Custom layers* (a sua, 1A) **ou** *Specify an ARN* (Klayers, 1B).
 3. **Configurar**:
    - *Timeout*: **15 min**; *Memory*: 256 MB.
-   - *Environment variables*: `BUCKET=transparencia-datalake-us-east-1-<projectname>`, `SECRET_NAME=portal-transparencia/chave-api-dados`.
+   - *Environment variables*:
+     | Key | Value |
+     |-----|-------|
+     | `BUCKET` | `transparencia-datalake-us-east-1-<projectname>` |
+     | `SECRET_NAME` | `portal-transparencia/chave-api-dados` |
+     | `SCHEDULE_NAME` | `transparencia-ingestao-15min` *(opcional — liga o auto-desligar)* |
 4. **Permissões (IAM Role `transparencia-ingestao-worker-role`)** — policy inline com:
    - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*` (objetos);
    - **`s3:ListBucket`** no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>` (o bucket, **sem** `/*`);
    - `secretsmanager:GetSecretValue` no ARN do segredo;
+   - **`scheduler:GetSchedule`, `scheduler:UpdateSchedule`** no ARN do schedule
+     `arn:aws:scheduler:us-east-1:<account>:schedule/default/transparencia-ingestao-15min`
+     (só se usar o `SCHEDULE_NAME` — é o que deixa a função se auto-desligar ao fechar o mês);
    - logs no CloudWatch (já vem no `AWSLambdaBasicExecutionRole`).
    > ⚠️ **Gotcha real:** sem `s3:ListBucket`, um `GetObject` num objeto que **ainda não existe**
    > (o checkpoint na 1ª execução) retorna **`AccessDenied`** em vez de **`NoSuchKey`** — e o código
