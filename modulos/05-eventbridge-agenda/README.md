@@ -12,15 +12,18 @@ Automatizar a ingestão: re-invocar a Lambda periodicamente até o mês fechar (
 - Módulo 04 (Lambda funcionando e testada manualmente).
 
 ## 🪜 Passo a passo (console)
-1. EventBridge → *Scheduler* → *Create schedule*.
+1. EventBridge → *Scheduler* → *Create schedule* → nome `transparencia-ingestao-15min`.
 2. **Recorrência**: *Rate-based* a cada **15 minutos** (cobre ~400 municípios por execução).
    > A 30 req/min, um mês inteiro leva ~14 execuções ≈ 3,5h de relógio.
-3. **Target**: a Lambda do Módulo 04.
+3. **Target**: *AWS Lambda → Invoke* → função `transparencia-ingestao-worker` (Módulo 04).
 4. **Payload (input)** fixo:
    ```json
    { "ano": 2024, "mes": 1 }
    ```
-5. Salve. A partir daí, a cada 15 min a Lambda avança um lote.
+5. **Permissão**: deixe o Scheduler **criar uma role** (`transparencia-scheduler-role`) com
+   `lambda:InvokeFunction` só no worker. Salve. A cada 15 min a Lambda avança um lote.
+   > 🔑 Quem invoca agora **não** é você — é o **Scheduler**. Por isso ele tem role própria
+   > (trust em `scheduler.amazonaws.com`).
 
 ### Quando parar
 Quando a Lambda gravar `_SUCCESS` (mês completo), as próximas execuções só verão

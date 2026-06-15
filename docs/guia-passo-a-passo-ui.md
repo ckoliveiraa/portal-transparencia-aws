@@ -415,17 +415,9 @@ lógica de chamar a API — muda o destino (vai pro S3) e ganha um truque pra ca
 
 ### 8a. A Layer do `requests`
 O `boto3` já vem no runtime; o `requests` **não** — ele entra por uma **Layer**.
-Há dois caminhos (use o **A**, que é o que fizemos no curso):
+Há dois caminhos (use o **A** — empacotar a nossa mostra como uma Layer funciona por dentro):
 
-**A) Layer pública Klayers (mais simples — recomendado)**
-Não precisa empacotar nada: usamos uma Layer pronta e pública. Para **Python 3.14**:
-```
-arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
-```
-> 💡 Klayers (https://github.com/keithrozario/Klayers) publica Layers prontas de libs
-> populares. Confira o ARN da sua **região** e **versão de Python** no repositório.
-
-**B) Construir a sua própria Layer (alternativa, bom de mostrar o conceito)**
+**A) Construir a sua própria Layer (o que fazemos no curso)**
 ```bash
 mkdir -p layer/python
 ./.venv/Scripts/python.exe -m pip install requests -t layer/python
@@ -433,6 +425,14 @@ cd layer && zip -r ../requests-layer.zip python && cd ..
 ```
 1. 🖱️ Lambda → **Layers** → **Create layer**.
 2. ⌨️ Nome `requests-layer` → **Upload** `requests-layer.zip` → runtime **Python 3.14** → **Create**.
+
+**B) Layer pública Klayers (opção — bom de conhecer)**
+Não precisa empacotar nada: usa uma Layer pronta e pública. Para **Python 3.14**:
+```
+arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
+```
+> 💡 Klayers (https://github.com/keithrozario/Klayers) publica Layers prontas de libs
+> populares. Confira o ARN da sua **região** e **versão de Python** no repositório.
 
 ### 8b. Criar a IAM Role da Lambda (least privilege)
 1. 🖱️ IAM → **Roles** → **Create role** → **AWS service** → **Lambda**.
@@ -469,7 +469,7 @@ cd layer && zip -r ../requests-layer.zip python && cd ..
    Memory 256 MB.
 6. 🖱️ **Environment variables:** `BUCKET = transparencia-datalake-us-east-1-training`
    (a dim **não** precisa de `SECRET_NAME` — a API do IBGE é aberta).
-7. 🖱️ Anexe a **Layer do `requests`** (a dim também usa `requests` — Klayers do 8a serve).
+7. 🖱️ Anexe a **Layer do `requests`** (a dim também usa `requests` — a mesma Layer do 8a serve).
 
 > 🟢 **Validado ao vivo via CLI:** apaguei o `dim_municipios.csv` do S3 e invoquei a dim com
 > payload `{}` → retorno `{"municipios": 5571, "destino": "s3://.../raw/dim_municipios/dim_municipios.csv"}`
@@ -481,8 +481,8 @@ cd layer && zip -r ../requests-layer.zip python && cd ..
    role existente `transparencia-ingestao-worker-role`.
 2. 🖱️ Cole `src/lambda/handler.py` → **Handler:** `handler.handler` → **Deploy**.
 3. 🖱️ **Layers → Add a layer:**
-   - **Klayers (8a-A):** *Specify an ARN* → cole `arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5`; ou
-   - **Própria (8a-B):** *Custom layers* → `requests-layer`.
+   - **Própria (8a-A):** *Custom layers* → `requests-layer`; ou
+   - **Klayers (8a-B):** *Specify an ARN* → cole `arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5`.
 4. 🖱️ **Configuration → General:** Timeout **15 min**, Memory **256 MB**.
    > 🎬 *Dica de demo:* para a gravação, deixe o timeout em **60s**. Assim **um** invoke fecha
    > um **lote curto** (~20 municípios), salva o checkpoint e retorna em segundos — perfeito

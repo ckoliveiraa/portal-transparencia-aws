@@ -22,12 +22,19 @@ Transformar os JSONs brutos (RAW) em **Parquet** limpo e particionado (CURATED),
 - grava Parquet particionado em `curated/bolsa_familia/`.
 
 ## 🪜 Passo a passo (console)
-1. **Subir o script** para o S3 (ex.: `s3://.../scripts/job_bolsa_familia.py`).
-2. Glue → *ETL jobs* → *Script editor* → cole/aponte o script. Tipo: **Spark**.
-3. **IAM Role do Glue** com acesso de leitura/escrita ao bucket.
-4. **Job parameters**: adicione `--BUCKET = transparencia-datalake-SEUNOME`.
-5. **Workers**: o mínimo (ex.: 2 DPUs / G.1X) — nosso volume é pequeno.
-6. *Run job* e acompanhe.
+1. **Subir o script** para o S3: `s3://transparencia-datalake-us-east-1-training/scripts/job_bolsa_familia.py`.
+2. Glue → *ETL jobs* → *Script editor* → cole/aponte o script. Tipo: **Spark**, Python.
+   Nome do job: `transparencia-glue-bolsa-familia`. **Glue version 4.0**.
+3. **IAM Role do Glue** (`transparencia-glue-role`): managed `AWSGlueServiceRole` + inline S3
+   (ler `raw/`, escrever/apagar `curated*`, `ListBucket`).
+4. **Job parameters**: adicione `--BUCKET = transparencia-datalake-us-east-1-training`.
+5. **Workers**: **G.1X**, **2** (volume pequeno).
+6. *Run job* e acompanhe em **Runs**.
+
+> ⚠️ **Gotcha real — `curated_$folder$` (403):** o committer do Spark cria um marcador de pasta
+> `curated_$folder$` **na raiz do bucket**, fora de `curated/`. Se a policy liberar só `curated/*`,
+> dá **AccessDenied**. Cura: liberar `curated*` (sem a barra) no `s3:PutObject`. O marcador é um
+> objeto de 0 byte inofensivo — Athena/Glue o ignoram.
 
 ## 🔍 Validação
 ```bash

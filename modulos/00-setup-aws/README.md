@@ -7,7 +7,8 @@ Preparar uma conta AWS segura e pronta para o curso, sem sustos na fatura.
 - **Conta root vs usuário IAM**: a conta root (e-mail de cadastro) é todo-poderosa; no dia a dia usamos um **usuário IAM** com permissões limitadas.
 - **MFA** (autenticação em 2 fatores): protege contra acesso indevido.
 - **Free Tier**: faixa gratuita da AWS (válida por 12 meses + serviços "always free").
-- **Região**: data center geográfico. Usaremos **us-east-1** (mais barata e com tudo disponível) ou **sa-east-1** (São Paulo).
+- **Região**: data center geográfico. Usaremos **us-east-1 (N. Virginia)** no curso inteiro.
+  ⚠️ O alarme de billing (`EstimatedCharges`) **só existe em us-east-1** — por isso fixamos ela.
 
 ## ✅ Pré-requisitos
 - E-mail e cartão de crédito (a AWS exige, mas o Free Tier evita cobranças).

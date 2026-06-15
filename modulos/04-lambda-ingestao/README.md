@@ -24,26 +24,42 @@ gravando no S3, com **checkpoint**, **idempotência** e **retry de rate limit**.
 - Ao terminar os 5.571, grava `_SUCCESS`.
 
 ## 🪜 Passo a passo (console)
-1. **Criar a Layer do `requests`**:
-   ```bash
-   mkdir -p layer/python
-   ./.venv/Scripts/python.exe -m pip install requests -t layer/python
-   cd layer && zip -r ../requests-layer.zip python && cd ..
-   ```
-   Lambda → *Layers* → *Create layer* → suba `requests-layer.zip` → runtime Python 3.12.
-2. **Criar a função**: Lambda → *Create function* → *Author from scratch* → Python 3.12.
+> Runtime do curso: **Python 3.14** em todas as Lambdas.
+
+1. **A Layer do `requests`** (o `boto3` já vem no runtime; o `requests` **não**). Dois caminhos —
+   usamos o **A** (empacotar a nossa ensina como uma Layer funciona por dentro):
+   - **A) Construir a sua (o que fazemos)**:
+     ```bash
+     mkdir -p layer/python
+     ./.venv/Scripts/python.exe -m pip install requests -t layer/python
+     cd layer && zip -r ../requests-layer.zip python && cd ..
+     ```
+     Lambda → *Layers* → *Create layer* → suba `requests-layer.zip` → runtime **Python 3.14**.
+   - **B) Layer pública Klayers (opção — bom de conhecer)** — não empacota nada, é só informar
+     o ARN (Python 3.14, us-east-1):
+     ```
+     arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
+     ```
+2. **Criar a função**: Lambda → *Create function* → *Author from scratch* → **Python 3.14**.
    - Cole o conteúdo de `src/lambda/handler.py`; handler = `handler.handler`.
-   - Anexe a Layer criada.
+   - **Layers → Add a layer:** *Custom layers* (a sua, 1A) **ou** *Specify an ARN* (Klayers, 1B).
 3. **Configurar**:
    - *Timeout*: **15 min**; *Memory*: 256 MB.
-   - *Environment variables*: `BUCKET=transparencia-datalake-SEUNOME`, `SECRET_NAME=portal-transparencia/chave-api-dados`.
-4. **Permissões (IAM Role)** — anexe uma policy com:
-   - `s3:GetObject`, `s3:PutObject`, `s3:HeadObject` no seu bucket;
-   - `secretsmanager:GetSecretValue` no seu segredo;
-   - logs no CloudWatch (já vem no role básico).
+   - *Environment variables*: `BUCKET=transparencia-datalake-us-east-1-training`, `SECRET_NAME=portal-transparencia/chave-api-dados`.
+4. **Permissões (IAM Role `transparencia-ingestao-worker-role`)** — policy inline com:
+   - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-training/*` (objetos);
+   - **`s3:ListBucket`** no `arn:aws:s3:::transparencia-datalake-us-east-1-training` (o bucket, **sem** `/*`);
+   - `secretsmanager:GetSecretValue` no ARN do segredo;
+   - logs no CloudWatch (já vem no `AWSLambdaBasicExecutionRole`).
+   > ⚠️ **Gotcha real:** sem `s3:ListBucket`, um `GetObject` num objeto que **ainda não existe**
+   > (o checkpoint na 1ª execução) retorna **`AccessDenied`** em vez de **`NoSuchKey`** — e o código
+   > quebra, porque ele espera `NoSuchKey` para "começar do zero". A cura é exatamente esse
+   > `s3:ListBucket` no ARN do **bucket**.
 5. **Criar TAMBÉM a Lambda da dim** (`handler_dim.py`) — popula os municípios sem `cp`:
-   - mesma role e mesma Layer; handler = `handler_dim.handler`; timeout 60s.
-   - env var: `BUCKET` (não precisa de `SECRET_NAME`, a API do IBGE é aberta).
+   - mesma Layer; handler = `handler_dim.handler`; **Timeout 120s** ⚠️ (a dim chama o IBGE com
+     `timeout=60`; os **3s** padrão do console não cabem). Memory 256 MB.
+   - role: pode reusar a do worker (já tem `PutObject`) ou uma própria só com `s3:PutObject` em
+     `raw/dim_municipios/*`. env var: `BUCKET` (não precisa de `SECRET_NAME`, a API do IBGE é aberta).
 6. **Ordem de execução importa** — o worker lê a dim do S3, então rode a dim **primeiro**:
    ```bash
    # 6a) popula a dimensão (1 chamada IBGE -> S3)

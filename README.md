@@ -69,7 +69,8 @@ portal-transparencia-aws/
 
 ## Começando
 
-1. **Pré-requisitos:** Python 3.11+, uma conta AWS, e a chave da API
+1. **Pré-requisitos:** Python 3.12+ (no curso usamos **3.14**, o mesmo runtime das Lambdas),
+   uma conta AWS na região **us-east-1**, e a chave da API
    ([cadastro gov.br](https://portaldatransparencia.gov.br/api-de-dados/cadastrar-email)).
 2. Copie `.env.example` para `.env` e preencha sua chave.
 3. Crie o ambiente local e gere a dim:
@@ -79,7 +80,7 @@ portal-transparencia-aws/
    ./.venv/Scripts/python.exe src/build_dim_municipios.py
    ./.venv/Scripts/python.exe src/ingestao_api.py --ano 2024 --mes 1 --uf SP --limite 5
    ```
-4. Siga os módulos em ordem, do **00** ao **10**.
+4. Siga os módulos em ordem, do **00** ao **09**.
 
 ## Dados & limites da API
 

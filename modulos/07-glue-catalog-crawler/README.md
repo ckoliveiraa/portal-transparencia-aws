@@ -3,6 +3,12 @@
 ## 🎯 Objetivo
 Catalogar os dados do S3 como **tabelas** para o Athena consultar via SQL.
 
+> 🔀 **Duas formas de catalogar — escolha uma:**
+> - **Crawler (automático)** — este módulo: um robô infere o schema e cria as tabelas.
+> - **DDL manual (na mão)** — o que fizemos na prática, direto no editor do Athena
+>   (`CREATE EXTERNAL TABLE` + `MSCK REPAIR TABLE`), ótimo para o aluno **ver o schema**.
+>   Está no [Módulo 08](../08-athena-analise/README.md). Faça **só uma** das duas.
+
 ## 🧠 Conceitos
 - **Glue Data Catalog**: um "metastore" — guarda o **schema** (colunas, tipos, partições) das tabelas, mas **não** os dados (que ficam no S3).
 - **Crawler**: robô que varre um caminho no S3, infere o schema e cria/atualiza a tabela no Catalog.

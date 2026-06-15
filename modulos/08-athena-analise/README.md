@@ -10,13 +10,43 @@ Responder a pergunta do projeto com SQL: **quais os 15 municípios que MAIS e qu
 - **Agregação**: `SUM`/`AVG` + `GROUP BY` para consolidar o ano; `ORDER BY ... LIMIT 15` para o ranking.
 
 ## ✅ Pré-requisitos
-- Tabelas `bolsa_familia` e `dim_municipios` no Catalog (Módulo 07).
+- CURATED em Parquet (Módulo 06) e a dim CSV no S3 (Módulo 02).
+- Tabelas no Catalog — via **Crawler (Módulo 07)** **ou** criadas **na mão** no passo 2 abaixo
+  (foi o que fizemos na prática).
 
 ## 🪜 Passo a passo (console)
-1. Athena → *Query editor*. Na 1ª vez, configure um **local de resultados** no S3
-   (ex.: `s3://.../athena-results/`).
-2. Selecione o database `transparencia`.
-3. Abra [`sql/rankings.sql`](../../sql/rankings.sql) e rode as queries (troque `<DB>` por `transparencia`).
+1. Athena → *Query editor*. Na 1ª vez, configure o **local de resultados** no S3:
+   `s3://transparencia-datalake-us-east-1-training/athena-results/`
+   (*Settings → Manage → Query result location*).
+2. **Catalogar na mão (DDL)** — alternativa ao Crawler; o aluno **vê o schema**. Rode no editor:
+   ```sql
+   CREATE DATABASE IF NOT EXISTS transparencia;
+
+   -- fato: Parquet particionado
+   CREATE EXTERNAL TABLE IF NOT EXISTS transparencia.bolsa_familia (
+     id bigint, data_referencia date, codigo_ibge string, municipio string,
+     uf_sigla string, regiao_nome string, programa string,
+     valor double, qtd_beneficiados bigint
+   ) PARTITIONED BY (ano int, mes int)
+   STORED AS PARQUET
+   LOCATION 's3://transparencia-datalake-us-east-1-training/curated/bolsa_familia/';
+
+   -- descobre as partições ano=/mes= já existentes (sem isso, a tabela retorna 0 linhas)
+   MSCK REPAIR TABLE transparencia.bolsa_familia;
+
+   -- dimensão: CSV com cabeçalho
+   CREATE EXTERNAL TABLE IF NOT EXISTS transparencia.dim_municipios (
+     codigo_ibge string, municipio string, uf_sigla string, uf_nome string,
+     uf_codigo string, regiao_sigla string, regiao_nome string,
+     mesorregiao string, microrregiao string
+   ) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+   STORED AS TEXTFILE
+   LOCATION 's3://transparencia-datalake-us-east-1-training/raw/dim_municipios/'
+   TBLPROPERTIES ('skip.header.line.count'='1');
+   ```
+   > 💡 Rode o `MSCK REPAIR TABLE` de novo sempre que surgir um `ano/mes` novo no curated.
+3. Selecione o database `transparencia` e abra [`sql/rankings.sql`](../../sql/rankings.sql)
+   (troque `<DB>` por `transparencia`).
    - **Conferência** de linhas por mês;
    - **Top 15 que MAIS recebem** (valor anual);
    - **Top 15 que MENOS recebem** (valor anual, `> 0`);

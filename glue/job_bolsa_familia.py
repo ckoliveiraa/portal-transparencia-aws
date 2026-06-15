@@ -3,8 +3,8 @@ Glue Job (PySpark) — Módulo 06.
 
 Lê os JSONs brutos do Bolsa Família na camada RAW, achata a estrutura
 aninhada, normaliza tipos e grava em Parquet na camada CURATED,
-particionado por ano/mes. O Crawler (Módulo 07) cataloga o resultado
-para o Athena (Módulo 08) consultar.
+particionado por ano/mes. O resultado é catalogado para o Athena
+(Módulo 08) consultar — via Crawler (Módulo 07) ou DDL manual.
 
 RAW     : s3://BUCKET/raw/bolsa_familia/ano=*/mes=*/uf=*/municipio=*.json
 CURATED : s3://BUCKET/curated/bolsa_familia/ano=*/mes=*/  (Parquet)
