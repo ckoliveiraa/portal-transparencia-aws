@@ -189,11 +189,6 @@ crie uma `dim_populacao(codigo_ibge, populacao)` e use a última query do `ranki
 - O top "menos" traz municípios pequenos (com `valor_ano > 0`).
 - O painel do Athena mostra **quanto foi escaneado** (deve ser MBs, não GBs).
 
-## 🏋️ Exercícios
-1. Faça o ranking por **região** (`GROUP BY regiao_nome`).
-2. Compare janeiro vs dezembro do mesmo ano.
-3. Crie uma **view** com o ranking anual para reuso.
-
 ## 💲 Custos / Free Tier
 - Athena cobra ~US$ 5/TB escaneado. Nossos dados (MBs) → **fração de centavo**. Parquet + partição mantêm isso mínimo.
 

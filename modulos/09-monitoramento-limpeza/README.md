@@ -46,10 +46,6 @@ aws s3 rb s3://transparencia-datalake-us-east-1-training
 - `aws lambda list-functions` não lista a função.
 - Cost Explorer no dia seguinte mostra gasto tendendo a zero.
 
-## 🏋️ Exercícios
-1. Monte um **dashboard** no CloudWatch com Invocações + Erros + Duração da Lambda.
-2. Calcule o custo total do curso no Cost Explorer (provavelmente centavos).
-
 ## 💲 Custos / Free Tier
 - CloudWatch Logs: 5 GB de ingestão grátis. Nossos logs → **zero**.
 - **A limpeza é o que garante custo final ≈ centavos.**

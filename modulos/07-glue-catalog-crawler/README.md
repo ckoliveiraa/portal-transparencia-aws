@@ -34,10 +34,6 @@ aws glue get-tables --database-name transparencia --query "TableList[].Name"
 ```
 Deve listar `bolsa_familia` e `dim_municipios`. No console do Athena elas aparecem no database `transparencia`.
 
-## 🏋️ Exercícios
-1. Adicione um novo mês ao CURATED e rode o crawler de novo: veja a partição nova aparecer.
-2. Explore a tabela em Glue → *Tables* → veja colunas e tipos inferidos.
-
 ## 💲 Custos / Free Tier
 - Catalog: **1 milhão de objetos armazenados grátis** + 1M de requisições/mês. Crawler: ~US$ 0,44/DPU-h enquanto roda (segundos). → **centavos ou zero**.
 

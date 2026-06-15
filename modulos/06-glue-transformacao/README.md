@@ -136,10 +136,6 @@ aws s3 ls s3://.../curated/bolsa_familia/ --recursive | head
 ```
 Devem aparecer arquivos `.parquet` sob `ano=2024/mes=1/`. O log do job imprime a contagem de linhas.
 
-## 🏋️ Exercícios
-1. Adicione uma coluna `valor_medio = valor / qtd_beneficiados`.
-2. Rode o job de novo e confirme que a partição é **sobrescrita** (idempotente), não duplicada.
-
 ## 💲 Custos / Free Tier
 - ⚠️ **Glue NÃO tem Free Tier.** ~**US$ 0,44/DPU-hora**, mínimo 2 DPUs, cobrança por segundo (mín. 1 min).
 - Um job pequeno custa **centavos**. Para economizar: poucos DPUs, dados pequenos, rode sob demanda (não em loop). Lembre de não deixar *development endpoints* ligados.

@@ -36,10 +36,6 @@ Preparar uma conta AWS segura e pronta para o curso, sem sustos na fatura.
 - Você consegue logar no console com o **usuário IAM** (não o root) e o MFA pede o código.
 - O alarme de billing aparece em CloudWatch → Alarms.
 
-## 🏋️ Exercícios
-1. Crie um segundo alarme em US$ 1 só para treinar.
-2. Liste seus usuários: `aws iam list-users`.
-
 ## 💲 Custos / Free Tier
 - Tudo neste módulo é **gratuito**. O alarme de billing é a sua rede de segurança para o resto do curso.
 

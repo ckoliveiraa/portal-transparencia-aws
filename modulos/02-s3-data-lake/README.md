@@ -45,10 +45,6 @@ Criar os buckets do data lake e subir os dados brutos (dim + fatos) com particio
 - Depois do Módulo 04, este mesmo comando mostrará `raw/dim_municipios/` e `raw/bolsa_familia/`
   preenchidos — sem nenhum upload manual.
 
-## 🏋️ Exercícios
-1. Ative o **versionamento** do bucket e suba o mesmo arquivo duas vezes — veja as versões.
-2. Crie um **lifecycle rule** que expira objetos em `_checkpoints/` após 30 dias.
-
 ## 💲 Custos / Free Tier
 - Free Tier: **5 GB** de S3 grátis por 12 meses. Nossos dados são poucos MB → **centavos ou zero**.
 

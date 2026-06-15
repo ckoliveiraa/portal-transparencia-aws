@@ -354,11 +354,6 @@ def handler(event, context):
 - `aws s3 cp s3://.../_checkpoints/202401.json -` mostra o offset salvo.
 - Rodar de novo **continua** de onde parou (e pula os já baixados).
 
-## 🏋️ Exercícios
-1. Invoque manualmente várias vezes até ver `concluido: true` e o `_SUCCESS`.
-2. Reduza o timeout para 1 min e observe lotes menores (mais invocações).
-3. Veja os logs em CloudWatch → Log groups → `/aws/lambda/...`.
-
 ## 💲 Custos / Free Tier
 - Lambda: **1M requisições/mês grátis** + 400k GB-s. Nossas ~14 invocações/mês → **zero**.
 

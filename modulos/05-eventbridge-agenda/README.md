@@ -41,10 +41,6 @@ Quando a Lambda gravar `_SUCCESS` (mês completo), as próximas execuções só 
   aws s3 ls s3://.../raw/bolsa_familia/ano=2024/mes=01/_SUCCESS
   ```
 
-## 🏋️ Exercícios
-1. Mude para *Cron-based* e dispare só às 2h da manhã.
-2. Coletar outro mês: troque o payload para `{ "ano": 2024, "mes": 2 }`.
-
 ## 💲 Custos / Free Tier
 - EventBridge Scheduler: **14M invocações/mês grátis**. Nosso uso → **zero**.
 
