@@ -23,9 +23,9 @@ Criar os buckets do data lake e subir os dados brutos (dim + fatos) com particio
    ```
    s3://transparencia-datalake-us-east-1-<projectname>/
    ├── raw/dim_municipios/dim_municipios.csv
-   ├── raw/bolsa_familia/ano=2024/mes=01/uf=SP/municipio=3550308.json
-   ├── curated/bolsa_familia/ano=2024/mes=01/part-*.parquet
-   └── _checkpoints/202401.json
+   ├── raw/bolsa_familia/ano=2026/mes=04/uf=SP/municipio=3550308.json
+   ├── curated/bolsa_familia/ano=2026/mes=04/part-*.parquet
+   └── _checkpoints/202604.json
    ```
 3. **Quem popula o bucket?** Nada de `aws s3 cp` — **tudo entra pela nuvem, via API**:
    - a **Lambda dim** (`handler_dim.py`) busca os municípios no IBGE e grava

@@ -21,7 +21,7 @@ ORDER BY ano, mes;
 -- 1) Agregação ANUAL por município (soma dos 12 meses) + enriquecimento
 --    com a dimensão (UF, nome, região). Base para os rankings.
 -- ---------------------------------------------------------------------
--- Parametrize o ano trocando 2024.
+-- Parametrize o ano trocando 2026.
 WITH fato_ano AS (
     SELECT
         codigo_ibge,
@@ -29,7 +29,7 @@ WITH fato_ano AS (
         SUM(qtd_beneficiados) AS beneficiados_ano,
         AVG(qtd_beneficiados) AS beneficiados_med_mes
     FROM <DB>.bolsa_familia
-    WHERE ano = 2024
+    WHERE ano = 2026
     GROUP BY codigo_ibge
 ),
 base AS (
@@ -52,7 +52,7 @@ SELECT * FROM base;   -- (CTE de apoio; usada nas queries abaixo)
 -- ---------------------------------------------------------------------
 WITH fato_ano AS (
     SELECT codigo_ibge, SUM(valor) AS valor_ano, SUM(qtd_beneficiados) AS beneficiados_ano
-    FROM <DB>.bolsa_familia WHERE ano = 2024 GROUP BY codigo_ibge
+    FROM <DB>.bolsa_familia WHERE ano = 2026 GROUP BY codigo_ibge
 )
 SELECT
     d.municipio, d.uf_sigla, d.regiao_nome,
@@ -70,7 +70,7 @@ LIMIT 15;
 -- ---------------------------------------------------------------------
 WITH fato_ano AS (
     SELECT codigo_ibge, SUM(valor) AS valor_ano, SUM(qtd_beneficiados) AS beneficiados_ano
-    FROM <DB>.bolsa_familia WHERE ano = 2024 GROUP BY codigo_ibge
+    FROM <DB>.bolsa_familia WHERE ano = 2026 GROUP BY codigo_ibge
 )
 SELECT
     d.municipio, d.uf_sigla, d.regiao_nome,
@@ -91,7 +91,7 @@ LIMIT 15;
 -- TOP 15 MAIS por habitante:
 WITH fato_ano AS (
     SELECT codigo_ibge, SUM(valor) AS valor_ano
-    FROM <DB>.bolsa_familia WHERE ano = 2024 GROUP BY codigo_ibge
+    FROM <DB>.bolsa_familia WHERE ano = 2026 GROUP BY codigo_ibge
 )
 SELECT
     d.municipio, d.uf_sigla,

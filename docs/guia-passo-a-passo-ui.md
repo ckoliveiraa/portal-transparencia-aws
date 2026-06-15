@@ -73,7 +73,7 @@ onde dá pra ver os endpoints e até testar no navegador. Vamos conhecer o nosso
 
    | Parâmetro | Obrigatório | Exemplo | Descrição |
    |-----------|:-----------:|---------|-----------|
-   | `mesAno` | ✅ | `202401` | Ano + mês (AAAAMM) |
+   | `mesAno` | ✅ | `202604` | Ano + mês (AAAAMM) |
    | `codigoIbge` | ✅ | `3550308` | Código IBGE do município (7 díg.) |
    | `pagina` | ❌ | `1` | Página da paginação (padrão 1) |
 
@@ -85,12 +85,12 @@ onde dá pra ver os endpoints e até testar no navegador. Vamos conhecer o nosso
 Pelo terminal (PowerShell ou bash), com a chave no `.env`:
 
 ```bash
-curl "https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-por-municipio?mesAno=202401&codigoIbge=3550308&pagina=1" \
+curl "https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-por-municipio?mesAno=202604&codigoIbge=3550308&pagina=1" \
   -H "chave-api-dados: SUA_CHAVE"
 ```
 
 - 👀 **Com a chave** → `200` e um JSON com o `valor` pago e `quantidadeBeneficiados`
-  de São Paulo (jan/2024).
+  de São Paulo (abr/2026).
 - ⚠️ **Sem a chave** → `401 - Chave de API não informada`. (Vale mostrar o erro de propósito.)
 
 🎬 *Narração:* "Esse JSON é o nosso dado bruto. Cada município, num mês, vira um registro
@@ -182,12 +182,12 @@ quando dá 429, e não rebaixar o que já baixou."
 ### 4a. Coletar os fatos — comece pequeno
 ```bash
 # 5 municípios de SP, ~10s
-./.venv/Scripts/python.exe src/ingestao_api.py --ano 2024 --mes 1 --uf SP --limite 5
+./.venv/Scripts/python.exe src/ingestao_api.py --ano 2026 --mes 4 --uf SP --limite 5
 ```
 - 👀 O coletor lê os `codigo_ibge` da dim (Passo 3) e pede o Bolsa Família de cada um.
 - 👀 Os JSONs saem em:
   ```
-  data/raw/bolsa_familia/ano=2024/mes=01/uf=SP/municipio=*.json
+  data/raw/bolsa_familia/ano=2026/mes=04/uf=SP/municipio=*.json
   ```
   Esse é **exatamente** o layout `ano=/mes=/uf=/municipio=` que recriaremos no S3.
 
@@ -324,9 +324,9 @@ da API, e o tratado, depois do processamento. A gente cria a caixa agora; encher
 ```
 s3://transparencia-datalake-us-east-1-<projectname>/
 ├── raw/dim_municipios/dim_municipios.csv          ← dimensão (Lambda dim)
-├── raw/bolsa_familia/ano=2024/mes=01/uf=SP/municipio=3550308.json   ← fatos (Lambda worker)
-├── curated/bolsa_familia/ano=2024/mes=01/part-*.parquet            ← tratado (Glue)
-└── _checkpoints/202401.json                       ← progresso da coleta
+├── raw/bolsa_familia/ano=2026/mes=04/uf=SP/municipio=3550308.json   ← fatos (Lambda worker)
+├── curated/bolsa_familia/ano=2026/mes=04/part-*.parquet            ← tratado (Glue)
+└── _checkpoints/202604.json                       ← progresso da coleta
 ```
 - **`raw`** = bronze (dado cru, como veio da API). **`curated`** = silver (limpo, em Parquet).
 - O **particionamento** `ano=/mes=/uf=` é o mesmo que você viu localmente no Passo 4 —
@@ -504,23 +504,23 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
    - 👀 Agora existe `raw/dim_municipios/dim_municipios.csv` no bucket — **sem upload manual**.
 2. 🖱️ Testar o worker: aba **Test** → evento:
    ```json
-   { "ano": 2024, "mes": 1 }
+   { "ano": 2026, "mes": 4 }
    ```
    - 👀 A 1ª execução processa **~400 municípios** e salva o checkpoint.
 
 ### ✅ Validação do Passo 8
 - Retorno do worker mostra `baixados`, `offset_final` e **`concluido: false`** (ainda faltam municípios).
   ```bash
-  aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/raw/bolsa_familia/ano=2024/mes=01/ --recursive
-  aws s3 cp s3://transparencia-datalake-us-east-1-<projectname>/_checkpoints/202401.json -
+  aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/raw/bolsa_familia/ano=2026/mes=04/ --recursive
+  aws s3 cp s3://transparencia-datalake-us-east-1-<projectname>/_checkpoints/202604.json -
   ```
 - Invocar de novo **continua de onde parou** (e pula os já baixados — idempotência).
 
-> 🟢 **Validado ao vivo via CLI** (jan/2024, timeout 60s de demo):
+> 🟢 **Validado ao vivo via CLI** (abr/2026, timeout 60s de demo):
 > - Invoke 1 → `{"offset_final": 18, "baixados": 18, "concluido": false}`
 > - Invoke 2 → `{"offset_final": 35, "baixados": 17, "concluido": false}` ← **retomou do 18**
-> - `_checkpoints/202401.json` = `{"offset": 35, "total": 5571}`
-> - 35 JSONs em `raw/bolsa_familia/ano=2024/mes=01/uf=AC/...`; ex.: Acrelândia/AC →
+> - `_checkpoints/202604.json` = `{"offset": 35, "total": 5571}`
+> - 35 JSONs em `raw/bolsa_familia/ano=2026/mes=04/uf=AC/...`; ex.: Acrelândia/AC →
 >   `valor: 1.632.706,00`, `quantidadeBeneficiados: 2300`.
 
 - ⚠️ Erros comuns (todos vistos na prática):
@@ -552,7 +552,7 @@ que clicar 'Test' uma porção de vezes. Em vez disso, um agendador faz isso soz
 5. 🖱️ **Target → AWS Lambda → Invoke** → função **`transparencia-ingestao-worker`**.
 6. ⌨️ **Payload (input):**
    ```json
-   { "ano": 2024, "mes": 1 }
+   { "ano": 2026, "mes": 4 }
    ```
 7. 🖱️ Permissão: deixe o Scheduler **criar uma nova role** para invocar a Lambda (padrão).
    **Create schedule**.
@@ -579,7 +579,7 @@ aws iam put-role-policy --role-name transparencia-scheduler-role --policy-name i
 aws scheduler create-schedule --name transparencia-ingestao-15min \
   --schedule-expression "rate(15 minutes)" \
   --flexible-time-window "Mode=OFF" \
-  --target '{"Arn":"arn:aws:lambda:us-east-1:862717443882:function:transparencia-ingestao-worker","RoleArn":"arn:aws:iam::862717443882:role/transparencia-scheduler-role","Input":"{\"ano\": 2024, \"mes\": 1}"}'
+  --target '{"Arn":"arn:aws:lambda:us-east-1:862717443882:function:transparencia-ingestao-worker","RoleArn":"arn:aws:iam::862717443882:role/transparencia-scheduler-role","Input":"{\"ano\": 2026, \"mes\": 4}"}'
 ```
 
 > 🟢 **Validado ao vivo via CLI:** criei o schedule em `rate(1 minute)` (só para a demo, para
@@ -599,11 +599,11 @@ aws scheduler create-schedule --name transparencia-ingestao-15min \
 ### 9b. Acompanhar até fechar o mês
 ```bash
 # o offset deve subir a cada 15 min
-aws s3 cp s3://transparencia-datalake-us-east-1-<projectname>/_checkpoints/202401.json -
+aws s3 cp s3://transparencia-datalake-us-east-1-<projectname>/_checkpoints/202604.json -
 ```
 - 👀 Quando todos os 5.571 forem processados, surge o marcador:
   ```bash
-  aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/raw/bolsa_familia/ano=2024/mes=01/_SUCCESS
+  aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/raw/bolsa_familia/ano=2026/mes=04/_SUCCESS
   ```
 
 ### 9c. ⚠️ Parar o agendamento (importante!)
@@ -619,7 +619,7 @@ o schedule **roda pra sempre** se você não parar.
    ```
 
 ### ✅ Validação do Passo 9
-- O `_checkpoints/202401.json` avança sozinho a cada ~15 min.
+- O `_checkpoints/202604.json` avança sozinho a cada ~15 min.
 - O marcador `_SUCCESS` aparece ao fim do mês.
 - Schedule **desabilitado** após concluir.
 
@@ -752,7 +752,7 @@ TBLPROPERTIES ('skip.header.line.count'='1');
 SELECT ano, mes, COUNT(*) municipios, ROUND(SUM(valor),2) valor_total
 FROM transparencia.bolsa_familia GROUP BY ano, mes ORDER BY ano, mes;
 
--- TOP 15 que MAIS recebem (troque 2026/2024 conforme o mês coletado)
+-- TOP 15 que MAIS recebem (ajuste ano/mes conforme o período coletado)
 WITH fato AS (
   SELECT codigo_ibge, SUM(valor) valor_ano, SUM(qtd_beneficiados) benef
   FROM transparencia.bolsa_familia WHERE ano = 2026 GROUP BY codigo_ibge)
@@ -771,7 +771,7 @@ ORDER BY f.valor_ano ASC LIMIT 15;
 ```
 
 ### 11d. Resultados (validados ao vivo via CLI)
-Conferência: `2024/1` → 69 municípios · `2026/4` → **1.360** municípios, R$ **4,78 bi**
+Conferência: `2026/4` → **1.360** municípios, R$ **4,78 bi**
 (parcial — coleta de abril em andamento).
 
 **TOP 15 que MAIS recebem (abr/2026):**

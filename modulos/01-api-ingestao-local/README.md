@@ -26,7 +26,7 @@ programa **Novo Bolsa Família por município**.
 
 | Parâmetro | Obrigatório | Exemplo | Descrição |
 |-----------|:-----------:|---------|-----------|
-| `mesAno` | ✅ | `202401` | Ano + mês (AAAAMM) |
+| `mesAno` | ✅ | `202604` | Ano + mês (AAAAMM) |
 | `codigoIbge` | ✅ | `3550308` | Código IBGE do município |
 | `pagina` | ❌ | `1` | Página (padrão 1) |
 
@@ -55,7 +55,7 @@ A chave é **gratuita** e sai na hora.
 
 ### Primeira chamada (teste rápido com curl)
 ```bash
-curl "https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-por-municipio?mesAno=202401&codigoIbge=3550308&pagina=1" \
+curl "https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-por-municipio?mesAno=202604&codigoIbge=3550308&pagina=1" \
   -H "chave-api-dados: SUA_CHAVE"
 ```
 - **Sem a chave** → `401 - Chave de API não informada`.
@@ -80,9 +80,9 @@ Com a chave no `.env`, vamos coletar de verdade.
 3. **Coletar os fatos** (Bolsa Família) — comece pequeno para não esperar 3h:
    ```bash
    # 5 municípios de SP, ~10s
-   ./.venv/Scripts/python.exe src/ingestao_api.py --ano 2024 --mes 1 --uf SP --limite 5
+   ./.venv/Scripts/python.exe src/ingestao_api.py --ano 2026 --mes 4 --uf SP --limite 5
    ```
-   Os arquivos saem em `data/raw/bolsa_familia/ano=2024/mes=01/uf=SP/municipio=*.json`
+   Os arquivos saem em `data/raw/bolsa_familia/ano=2026/mes=04/uf=SP/municipio=*.json`
    (o mesmo layout particionado que usaremos no S3).
 
 > 🔎 Abra `src/ingestao_api.py`: repare no **intervalo de 2,1s** (rate limit), no **retry em 429**
@@ -207,9 +207,9 @@ Conceitos demonstrados:
   - particionamento estilo data lake: ano=/mes=/uf=
 
 Uso:
-  python src/ingestao_api.py --ano 2024 --mes 1                # país inteiro (~3h)
-  python src/ingestao_api.py --ano 2024 --mes 1 --limite 5     # teste rápido
-  python src/ingestao_api.py --ano 2024 --mes 1 --uf SP        # só uma UF
+  python src/ingestao_api.py --ano 2026 --mes 4                # país inteiro (~3h)
+  python src/ingestao_api.py --ano 2026 --mes 4 --limite 5     # teste rápido
+  python src/ingestao_api.py --ano 2026 --mes 4 --uf SP        # só uma UF
 """
 
 from __future__ import annotations

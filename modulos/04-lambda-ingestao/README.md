@@ -345,13 +345,13 @@ def handler(event, context):
    aws lambda invoke --function-name transparencia-ingestao-dim \
      --payload '{}' --cli-binary-format raw-in-base64-out dim.json && cat dim.json
    ```
-7. **Testar o worker** com o evento `{ "ano": 2024, "mes": 1 }`:
+7. **Testar o worker** com o evento `{ "ano": 2026, "mes": 4 }`:
    A primeira execução processa ~400 municípios e salva o checkpoint.
 
 ## 🔍 Validação
 - O retorno mostra `baixados`, `offset_final` e `concluido: false` (ainda faltam municípios).
-- `aws s3 ls s3://.../raw/bolsa_familia/ano=2024/mes=01/ --recursive` mostra JSONs novos.
-- `aws s3 cp s3://.../_checkpoints/202401.json -` mostra o offset salvo.
+- `aws s3 ls s3://.../raw/bolsa_familia/ano=2026/mes=04/ --recursive` mostra JSONs novos.
+- `aws s3 cp s3://.../_checkpoints/202604.json -` mostra o offset salvo.
 - Rodar de novo **continua** de onde parou (e pula os já baixados).
 
 ## 💲 Custos / Free Tier

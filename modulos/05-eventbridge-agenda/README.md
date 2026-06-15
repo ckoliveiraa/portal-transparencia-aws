@@ -18,7 +18,7 @@ Automatizar a ingestão: re-invocar a Lambda periodicamente até o mês fechar (
 3. **Target**: *AWS Lambda → Invoke* → função `transparencia-ingestao-worker` (Módulo 04).
 4. **Payload (input)** fixo:
    ```json
-   { "ano": 2024, "mes": 1 }
+   { "ano": 2026, "mes": 4 }
    ```
 5. **Permissão**: deixe o Scheduler **criar uma role** (`transparencia-scheduler-role`) com
    `lambda:InvokeFunction` só no worker. Salve. A cada 15 min a Lambda avança um lote.
@@ -34,11 +34,11 @@ Quando a Lambda gravar `_SUCCESS` (mês completo), as próximas execuções só 
 ## 🔍 Validação
 - Acompanhe o checkpoint subir a cada 15 min:
   ```bash
-  aws s3 cp s3://.../_checkpoints/202401.json -
+  aws s3 cp s3://.../_checkpoints/202604.json -
   ```
 - Ao final, confirme o marcador:
   ```bash
-  aws s3 ls s3://.../raw/bolsa_familia/ano=2024/mes=01/_SUCCESS
+  aws s3 ls s3://.../raw/bolsa_familia/ano=2026/mes=04/_SUCCESS
   ```
 
 ## 💲 Custos / Free Tier

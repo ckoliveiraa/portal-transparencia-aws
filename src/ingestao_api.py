@@ -14,9 +14,9 @@ Conceitos demonstrados:
   - particionamento estilo data lake: ano=/mes=/uf=
 
 Uso:
-  python src/ingestao_api.py --ano 2024 --mes 1                # país inteiro (~3h)
-  python src/ingestao_api.py --ano 2024 --mes 1 --limite 5     # teste rápido
-  python src/ingestao_api.py --ano 2024 --mes 1 --uf SP        # só uma UF
+  python src/ingestao_api.py --ano 2026 --mes 4                # país inteiro (~3h)
+  python src/ingestao_api.py --ano 2026 --mes 4 --limite 5     # teste rápido
+  python src/ingestao_api.py --ano 2026 --mes 4 --uf SP        # só uma UF
 """
 
 from __future__ import annotations

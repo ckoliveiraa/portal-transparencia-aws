@@ -20,25 +20,25 @@ chave-api-dados: <SUA_CHAVE>
 
 | Parâmetro | Obrigatório | Exemplo | Descrição |
 |-----------|:-----------:|---------|-----------|
-| `mesAno` | ✅ | `202401` | Ano + mês no formato `AAAAMM` |
+| `mesAno` | ✅ | `202604` | Ano + mês no formato `AAAAMM` |
 | `codigoIbge` | ✅ | `3550308` | Código IBGE do município (7 dígitos) |
 | `pagina` | ❌ | `1` | Página da paginação (padrão `1`) |
 
 ### Exemplo de requisição
 
 ```bash
-curl "https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-por-municipio?mesAno=202401&codigoIbge=3550308&pagina=1" \
+curl "https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-por-municipio?mesAno=202604&codigoIbge=3550308&pagina=1" \
   -H "accept: */*" \
   -H "chave-api-dados: $PORTAL_TRANSPARENCIA_API_KEY"
 ```
 
-### Exemplo de resposta (São Paulo-SP, jan/2024)
+### Exemplo de resposta (São Paulo-SP, abr/2026)
 
 ```json
 [
   {
     "id": 101708076,
-    "dataReferencia": "2024-01-01",
+    "dataReferencia": "2026-04-01",
     "municipio": {
       "codigoIBGE": "3550308",
       "nomeIBGE": "SÃO PAULO",

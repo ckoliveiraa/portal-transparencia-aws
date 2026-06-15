@@ -134,7 +134,7 @@ job.commit()
 ```bash
 aws s3 ls s3://.../curated/bolsa_familia/ --recursive | head
 ```
-Devem aparecer arquivos `.parquet` sob `ano=2024/mes=1/`. O log do job imprime a contagem de linhas.
+Devem aparecer arquivos `.parquet` sob `ano=2026/mes=4/`. O log do job imprime a contagem de linhas.
 
 ## 💲 Custos / Free Tier
 - ⚠️ **Glue NÃO tem Free Tier.** ~**US$ 0,44/DPU-hora**, mínimo 2 DPUs, cobrança por segundo (mín. 1 min).
