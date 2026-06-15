@@ -155,6 +155,6 @@ aws stepfunctions start-execution \
 
 ## 🧹 Limpeza
 - Não há agendador rodando para sempre: a execução termina sozinha. Para remover de vez:
-  Step Functions → *Delete state machine* (Módulo 09).
+  Step Functions → *Delete state machine* (Módulo 10).
 
 ➡️ Próximo: [Módulo 06 — Glue (transformação)](../06-glue-transformacao/README.md)

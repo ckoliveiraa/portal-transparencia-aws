@@ -366,6 +366,6 @@ def handler(event, context):
 - Lambda: **1M requisições/mês grátis** + 400k GB-s. Nossas ~14 invocações/mês → **zero**.
 
 ## 🧹 Limpeza
-- A função fica para o Módulo 05. Para apagar: Lambda → *Delete function* (faremos no Módulo 09).
+- A função fica para o Módulo 05. Para apagar: Lambda → *Delete function* (faremos no Módulo 10).
 
 ➡️ Próximo: [Módulo 05 — Step Functions (orquestração)](../05-step-functions-orquestracao/README.md)

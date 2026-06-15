@@ -1,4 +1,4 @@
-# Módulo 10 — 🎓 Desafio final: auto-check de novos meses
+# Módulo 09 — 🎓 Desafio final: auto-check de novos meses
 
 > **Formato diferente dos outros módulos.** Aqui não há passo a passo pronto: é um
 > **desafio de implementação** para você fechar o curso. Damos o objetivo, a arquitetura
@@ -181,6 +181,7 @@ E o **Scheduler** precisa de uma role com `lambda:InvokeFunction` no detector.
 ## 🧹 Limpeza
 - Desabilite/exclua o **Scheduler** (`transparencia-detector-diario`) — senão ele sonda a API
   todo dia para sempre.
-- Remova a Lambda detector e a role no teardown (Módulo 09).
+- Remova a Lambda detector e a role no teardown (Módulo 10).
 
+➡️ Próximo: [Módulo 10 — Monitoramento & limpeza](../10-monitoramento-limpeza/README.md)
 ⬅️ Voltar ao [índice do curso](../../README.md)

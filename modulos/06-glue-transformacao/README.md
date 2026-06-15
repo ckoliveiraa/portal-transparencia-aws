@@ -176,6 +176,6 @@ Devem aparecer arquivos `.parquet` sob `ano=2026/mes=4/`. O log do job imprime a
 - Um job pequeno custa **centavos**. Para economizar: poucos DPUs, dados pequenos, rode sob demanda (não em loop). Lembre de não deixar *development endpoints* ligados.
 
 ## 🧹 Limpeza
-- O job em si não cobra parado; só ao rodar. Remova-o no Módulo 09.
+- O job em si não cobra parado; só ao rodar. Remova-o no Módulo 10.
 
 ➡️ Próximo: [Módulo 07 — Glue Crawler / Catalog](../07-glue-catalog-crawler/README.md)
