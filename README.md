@@ -7,25 +7,10 @@ reais do **Portal da Transparência** (Novo Bolsa Família) e do **IBGE** (munic
 > **Para quem é:** iniciantes em engenharia de dados / AWS.
 > **Como funciona:** cada módulo monta uma peça da arquitetura **direto no console**
 > (para você ver e entender o serviço) e validar o pipeline ponta a ponta.
-> **Custo:** focado no **Free Tier** — cada módulo traz o aviso de custo e a limpeza.
+> **Custo:** mantido em **centavos** — atenção: **Glue** e **Secrets Manager** **não são
+> gratuitos**. Cada módulo traz o aviso de custo e a limpeza no fim para você não ser cobrado.
 
 ## O que você vai construir
-
-```
-IBGE API (1 chamada) ─────> [Lambda dim] ──────> S3 RAW/dim_municipios (5.571)
-                                                       │
-API Portal Transparência ──> [Lambda worker em LOTES] ──> S3 RAW (bronze, JSON)
- (1 req/município, 30/min)        │   ▲                    raw/ano=/mes=/uf=/cod.json
-                           Secrets Manager │                    │
-                                 │   checkpoint (S3)       [Glue Job PySpark]
-      EventBridge (a cada ~15min)┘   retoma até fechar     limpa+achata+Parquet
-                                      o mês (~14 lotes)    S3 CURATED (silver, ano/mes)
-                                                                │
-                                                   [Glue Crawler → Data Catalog]
-                                                                │
-                                                     Athena (SQL: top 15 +/-)
-      Tudo: IAM (least privilege) · CloudWatch (logs)
-```
 
 ![Arquitetura AWS do pipeline](docs/arquitetura-aws.png)
 
@@ -36,7 +21,7 @@ Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](do
 
 | # | Módulo | Você aprende |
 |---|--------|--------------|
-| 00 | [Setup AWS](modulos/00-setup-aws/README.md) | Conta, IAM, MFA, Free Tier, **alarme de billing**, AWS CLI |
+| 00 | [Setup AWS](modulos/00-setup-aws/README.md) | Conta, IAM, MFA, **alarme de billing**, AWS CLI |
 | 01 | [A API e a chave](modulos/01-api-ingestao-local/README.md) | **Apresentação da API, cadastro no gov.br e obtenção da chave**; primeira chamada; coletor local em Python |
 | 02 | [S3 / Data Lake](modulos/02-s3-data-lake/README.md) | Object storage, camadas bronze/silver, particionamento |
 | 03 | [Secrets Manager](modulos/03-secrets-manager/README.md) | Guardar a chave da API com segurança (sem hardcode) |
@@ -53,7 +38,7 @@ Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](do
 portal-transparencia-aws/
 ├── README.md                     # este índice
 ├── docs/                         # api-limites, api-endpoints, arquitetura (+ diagrama .png/.drawio)
-├── modulos/                      # 00–10: um README didático por módulo
+├── modulos/                      # 00–09: um README didático por módulo
 ├── src/
 │   ├── build_dim_municipios.py   # gera a dim (IBGE) — 5.571 municípios
 │   ├── ingestao_api.py           # coletor local dos fatos (p/ entender a API)
