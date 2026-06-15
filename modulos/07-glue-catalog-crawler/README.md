@@ -20,11 +20,15 @@ Catalogar os dados do S3 como **tabelas** para o Athena consultar via SQL.
 
 ## 🪜 Passo a passo (console)
 1. Glue → *Databases* → *Add database*: `transparencia`.
-2. **Crawler dos fatos**: Glue → *Crawlers* → *Create crawler*.
+2. **Crawler dos fatos** (`transparencia-bolsa-familia-crawler`): Glue → *Crawlers* → *Create crawler*.
    - Source: `s3://.../curated/bolsa_familia/`.
-   - IAM role com acesso ao bucket.
+   - IAM role com acesso ao bucket (a mesma `transparencia-glue-role` serve).
    - Target database: `transparencia`; prefixo de tabela: (vazio).
    - *Run* → cria a tabela `bolsa_familia` com partições `ano`, `mes`.
+   > 🔗 É **este** crawler que a state machine do [Módulo 05](../05-step-functions-orquestracao/README.md)
+   > roda automaticamente após o Glue. Para ele só **adicionar partições** sem mexer numa tabela já
+   > criada na mão (DDL do Módulo 08), use *Schema change policy* = **Log** e *partições* herdando
+   > da tabela.
 3. **Crawler da dim**: repita apontando para `s3://.../raw/dim_municipios/` → tabela `dim_municipios`.
    > Para CSV, confirme que o crawler detectou o cabeçalho (senão ajuste o classifier).
 
