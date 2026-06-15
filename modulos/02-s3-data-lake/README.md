@@ -15,13 +15,13 @@ Criar os buckets do data lake e subir os dados brutos (dim + fatos) com particio
 
 ## 🪜 Passo a passo (console)
 1. **Criar o bucket**: S3 → *Create bucket*.
-   - Nome **único no mundo** — neste curso usamos `transparencia-datalake-us-east-1-training`
+   - Nome **único no mundo** — neste curso usamos `transparencia-datalake-us-east-1-<projectname>`
      (escolha um nome só seu se for refazer).
    - Região: **US East (N. Virginia) us-east-1** (a mesma do curso).
    - **Block all public access**: deixe MARCADO (dados não devem ser públicos).
 2. **Entender o layout de prefixos** que usaremos:
    ```
-   s3://transparencia-datalake-us-east-1-training/
+   s3://transparencia-datalake-us-east-1-<projectname>/
    ├── raw/dim_municipios/dim_municipios.csv
    ├── raw/bolsa_familia/ano=2024/mes=01/uf=SP/municipio=3550308.json
    ├── curated/bolsa_familia/ano=2024/mes=01/part-*.parquet
@@ -40,7 +40,7 @@ Criar os buckets do data lake e subir os dados brutos (dim + fatos) com particio
 ## 🔍 Validação
 - O bucket existe e está vazio:
   ```bash
-  aws s3 ls s3://transparencia-datalake-us-east-1-training/
+  aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/
   ```
 - Depois do Módulo 04, este mesmo comando mostrará `raw/dim_municipios/` e `raw/bolsa_familia/`
   preenchidos — sem nenhum upload manual.
@@ -49,6 +49,6 @@ Criar os buckets do data lake e subir os dados brutos (dim + fatos) com particio
 - Free Tier: **5 GB** de S3 grátis por 12 meses. Nossos dados são poucos MB → **centavos ou zero**.
 
 ## 🧹 Limpeza
-- Para zerar: `aws s3 rm s3://transparencia-datalake-us-east-1-training/ --recursive` (cuidado!). Removemos o bucket no Módulo 09.
+- Para zerar: `aws s3 rm s3://transparencia-datalake-us-east-1-<projectname>/ --recursive` (cuidado!). Removemos o bucket no Módulo 09.
 
 ➡️ Próximo: [Módulo 03 — Secrets Manager](../03-secrets-manager/README.md)

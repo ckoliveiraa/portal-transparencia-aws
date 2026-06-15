@@ -36,8 +36,8 @@ aws secretsmanager delete-secret --secret-id portal-transparencia/chave-api-dado
   --force-delete-without-recovery
 
 # 5) Esvaziar e remover o bucket (CUIDADO: apaga os dados)
-aws s3 rm s3://transparencia-datalake-us-east-1-training --recursive
-aws s3 rb s3://transparencia-datalake-us-east-1-training
+aws s3 rm s3://transparencia-datalake-us-east-1-<projectname> --recursive
+aws s3 rb s3://transparencia-datalake-us-east-1-<projectname>
 ```
 5. **Conferir alarmes/SNS** e remover o que não usar mais (mantenha o alarme de billing!).
 

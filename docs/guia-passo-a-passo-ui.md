@@ -305,14 +305,14 @@ do Free Tier, a AWS te manda um e-mail antes de virar problema."
 quem o preenche são as **Lambdas** (Passo 8+), via API, sem upload manual.
 
 > ⚠️ Nome de bucket é **único no mundo inteiro**. Neste curso usamos
-> `transparencia-datalake-us-east-1-training` (escolha um nome só seu se for refazer).
+> `transparencia-datalake-us-east-1-<projectname>` (escolha um nome só seu se for refazer).
 
 🎬 *Narração:* "O S3 é o 'HD infinito' da AWS. Aqui mora todo o nosso dado: o cru, que chega
 da API, e o tratado, depois do processamento. A gente cria a caixa agora; encher fica pras Lambdas."
 
 ### 6a. Criar o bucket
 1. 🖱️ Console → busque **S3** → **Create bucket**.
-2. ⌨️ **Bucket name:** `transparencia-datalake-us-east-1-training`.
+2. ⌨️ **Bucket name:** `transparencia-datalake-us-east-1-<projectname>`.
 3. 🖱️ **Region:** **US East (N. Virginia) us-east-1** (a mesma do curso).
 4. 🖱️ **Block all public access:** deixe **MARCADO** (todos os 4) — dados **não** são públicos.
    - 🎬 *Narração:* "Dado de cidadão não fica público. Esse bloqueio aqui é inegociável."
@@ -322,7 +322,7 @@ da API, e o tratado, depois do processamento. A gente cria a caixa agora; encher
 ### 6b. Entender o layout de prefixos (só explicar, não criar)
 🖱️ Abra o bucket e mostre que ele está vazio. Explique a estrutura que **vai** existir:
 ```
-s3://transparencia-datalake-us-east-1-training/
+s3://transparencia-datalake-us-east-1-<projectname>/
 ├── raw/dim_municipios/dim_municipios.csv          ← dimensão (Lambda dim)
 ├── raw/bolsa_familia/ano=2024/mes=01/uf=SP/municipio=3550308.json   ← fatos (Lambda worker)
 ├── curated/bolsa_familia/ano=2024/mes=01/part-*.parquet            ← tratado (Glue)
@@ -341,7 +341,7 @@ s3://transparencia-datalake-us-east-1-training/
 
 ### ✅ Validação do Passo 6
 ```bash
-aws s3 ls s3://transparencia-datalake-us-east-1-training/
+aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/
 ```
 - 👀 Sem erro (bucket existe). Vazio agora; após o Passo 8 mostrará `raw/...` preenchido **sem upload manual**.
 
@@ -438,9 +438,9 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
 1. 🖱️ IAM → **Roles** → **Create role** → **AWS service** → **Lambda**.
 2. 🖱️ Anexe **`AWSLambdaBasicExecutionRole`** (logs no CloudWatch).
 3. 🖱️ Depois de criar, **Add permissions → Create inline policy** com **3** permissões:
-   - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-training/*`
+   - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*`
      (objetos);
-   - `s3:ListBucket` no `arn:aws:s3:::transparencia-datalake-us-east-1-training` (o bucket,
+   - `s3:ListBucket` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>` (o bucket,
      **sem** o `/*`) — ⚠️ veja o box abaixo, é fácil esquecer;
    - `secretsmanager:GetSecretValue` no ARN do segredo `portal-transparencia/chave-api-dados`.
 4. ⌨️ Nome da role: `transparencia-ingestao-worker-role`.
@@ -461,13 +461,13 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
 3. 🖱️ **Permissões/role** — a dim precisa de **`s3:PutObject`** (ela grava o CSV). Duas opções:
    - **Simples:** reusar a `transparencia-ingestao-worker-role` (já tem PutObject no bucket); ou
    - **Least-privilege:** role própria com `s3:PutObject` **escopado** a
-     `arn:aws:s3:::transparencia-datalake-us-east-1-training/raw/dim_municipios/*`
+     `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/raw/dim_municipios/*`
      (a dim só escreve esse prefixo — não lê segredo nem outros objetos).
 4. 🖱️ Cole o conteúdo de `src/lambda/handler_dim.py` → **Handler:** `handler_dim.handler` → **Deploy**.
 5. 🖱️ **Configuration → General:** Timeout **120s** ⚠️ (o `handler_dim.py` chama o IBGE com
    `timeout=60`; os **3s** padrão do console **não** cabem — foi o que travou a 1ª versão).
    Memory 256 MB.
-6. 🖱️ **Environment variables:** `BUCKET = transparencia-datalake-us-east-1-training`
+6. 🖱️ **Environment variables:** `BUCKET = transparencia-datalake-us-east-1-<projectname>`
    (a dim **não** precisa de `SECRET_NAME` — a API do IBGE é aberta).
 7. 🖱️ Anexe a **Layer do `requests`** (a dim também usa `requests` — a mesma Layer do 8a serve).
 
@@ -490,7 +490,7 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
 5. 🖱️ **Environment variables:**
    | Key | Value |
    |-----|-------|
-   | `BUCKET` | `transparencia-datalake-us-east-1-training` |
+   | `BUCKET` | `transparencia-datalake-us-east-1-<projectname>` |
    | `SECRET_NAME` | `portal-transparencia/chave-api-dados` |
    | `INTERVALO_SEG` | `2.1` *(opcional; padrão já é 2.1)* |
    | `MARGEM_SEG` | `30` *(opcional; no demo de 60s use `15`)* |
@@ -511,8 +511,8 @@ arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
 ### ✅ Validação do Passo 8
 - Retorno do worker mostra `baixados`, `offset_final` e **`concluido: false`** (ainda faltam municípios).
   ```bash
-  aws s3 ls s3://transparencia-datalake-us-east-1-training/raw/bolsa_familia/ano=2024/mes=01/ --recursive
-  aws s3 cp s3://transparencia-datalake-us-east-1-training/_checkpoints/202401.json -
+  aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/raw/bolsa_familia/ano=2024/mes=01/ --recursive
+  aws s3 cp s3://transparencia-datalake-us-east-1-<projectname>/_checkpoints/202401.json -
   ```
 - Invocar de novo **continua de onde parou** (e pula os já baixados — idempotência).
 
@@ -599,11 +599,11 @@ aws scheduler create-schedule --name transparencia-ingestao-15min \
 ### 9b. Acompanhar até fechar o mês
 ```bash
 # o offset deve subir a cada 15 min
-aws s3 cp s3://transparencia-datalake-us-east-1-training/_checkpoints/202401.json -
+aws s3 cp s3://transparencia-datalake-us-east-1-<projectname>/_checkpoints/202401.json -
 ```
 - 👀 Quando todos os 5.571 forem processados, surge o marcador:
   ```bash
-  aws s3 ls s3://transparencia-datalake-us-east-1-training/raw/bolsa_familia/ano=2024/mes=01/_SUCCESS
+  aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/raw/bolsa_familia/ano=2024/mes=01/_SUCCESS
   ```
 
 ### 9c. ⚠️ Parar o agendamento (importante!)
@@ -647,7 +647,7 @@ Glue — um Spark serverless que lê tudo, organiza e regrava num formato bom pr
 1. 🖱️ Suba o script: **S3** → `scripts/job_bolsa_familia.py`.
 2. 🖱️ **Glue** → **ETL jobs** → **Script editor** → tipo **Spark**, Python → aponte o script.
 3. 🖱️ **IAM role do Glue** (ler `raw/`, escrever `curated/`).
-4. ⌨️ **Job details → Job parameters:** `--BUCKET` = `transparencia-datalake-us-east-1-training`.
+4. ⌨️ **Job details → Job parameters:** `--BUCKET` = `transparencia-datalake-us-east-1-<projectname>`.
 5. 🖱️ **Workers:** G.1X, **2** (volume pequeno). **Glue version** 4.0.
 6. 🖱️ **Run** e acompanhe em **Runs**.
 
@@ -661,14 +661,14 @@ aws iam put-role-policy --role-name transparencia-glue-role --policy-name s3-raw
   --policy-document file://glue-s3-policy.json   # GetObject /*, Put/Delete em curated*, ListBucket
 
 # script -> S3
-aws s3 cp glue/job_bolsa_familia.py s3://transparencia-datalake-us-east-1-training/scripts/job_bolsa_familia.py
+aws s3 cp glue/job_bolsa_familia.py s3://transparencia-datalake-us-east-1-<projectname>/scripts/job_bolsa_familia.py
 
 # cria o job e roda
 aws glue create-job --name transparencia-glue-bolsa-familia \
   --role arn:aws:iam::862717443882:role/transparencia-glue-role \
-  --command '{"Name":"glueetl","ScriptLocation":"s3://transparencia-datalake-us-east-1-training/scripts/job_bolsa_familia.py","PythonVersion":"3"}' \
+  --command '{"Name":"glueetl","ScriptLocation":"s3://transparencia-datalake-us-east-1-<projectname>/scripts/job_bolsa_familia.py","PythonVersion":"3"}' \
   --glue-version "4.0" --worker-type G.1X --number-of-workers 2 \
-  --default-arguments '{"--BUCKET":"transparencia-datalake-us-east-1-training","--enable-continuous-cloudwatch-log":"true","--continuous-log-logGroup":"/aws-glue/jobs/transparencia-bolsa-familia"}'
+  --default-arguments '{"--BUCKET":"transparencia-datalake-us-east-1-<projectname>","--enable-continuous-cloudwatch-log":"true","--continuous-log-logGroup":"/aws-glue/jobs/transparencia-bolsa-familia"}'
 aws glue start-job-run --job-name transparencia-glue-bolsa-familia
 ```
 
@@ -691,7 +691,7 @@ aws glue start-job-run --job-name transparencia-glue-bolsa-familia
 
 ### ✅ Validação do Passo 10
 ```bash
-aws s3 ls s3://transparencia-datalake-us-east-1-training/curated/bolsa_familia/ --recursive | head
+aws s3 ls s3://transparencia-datalake-us-east-1-<projectname>/curated/bolsa_familia/ --recursive | head
 ```
 > 🟢 **Validado ao vivo via CLI:** job `SUCCEEDED` (~278s, 2 DPU); log de saída
 > `OK: 1268 linhas gravadas`; Parquet em `curated/bolsa_familia/ano=2026/mes=4/part-*.snappy.parquet`.
@@ -712,7 +712,7 @@ e aí é `SELECT` à vontade."
 
 ### 11a. Pré-requisito — local de resultados
 O Athena grava o resultado de cada query no S3. Defina uma pasta:
-`s3://transparencia-datalake-us-east-1-training/athena-results/`
+`s3://transparencia-datalake-us-east-1-<projectname>/athena-results/`
 (no console: **Athena → Settings → Manage → Query result location**).
 
 ### 11b. Catalogar as tabelas (DDL no editor do Athena)
@@ -728,7 +728,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS transparencia.bolsa_familia (
   valor double, qtd_beneficiados bigint
 ) PARTITIONED BY (ano int, mes int)
 STORED AS PARQUET
-LOCATION 's3://transparencia-datalake-us-east-1-training/curated/bolsa_familia/';
+LOCATION 's3://transparencia-datalake-us-east-1-<projectname>/curated/bolsa_familia/';
 
 -- registra as partições existentes (ano=/mes=)
 MSCK REPAIR TABLE transparencia.bolsa_familia;
@@ -740,7 +740,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS transparencia.dim_municipios (
   mesorregiao string, microrregiao string
 ) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 STORED AS TEXTFILE
-LOCATION 's3://transparencia-datalake-us-east-1-training/raw/dim_municipios/'
+LOCATION 's3://transparencia-datalake-us-east-1-<projectname>/raw/dim_municipios/'
 TBLPROPERTIES ('skip.header.line.count'='1');
 ```
 > 💡 `MSCK REPAIR TABLE` é o passo que **descobre as partições** no S3. Sem ele, a tabela existe

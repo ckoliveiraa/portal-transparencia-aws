@@ -324,10 +324,10 @@ def handler(event, context):
    - **Layers → Add a layer:** *Custom layers* (a sua, 1A) **ou** *Specify an ARN* (Klayers, 1B).
 3. **Configurar**:
    - *Timeout*: **15 min**; *Memory*: 256 MB.
-   - *Environment variables*: `BUCKET=transparencia-datalake-us-east-1-training`, `SECRET_NAME=portal-transparencia/chave-api-dados`.
+   - *Environment variables*: `BUCKET=transparencia-datalake-us-east-1-<projectname>`, `SECRET_NAME=portal-transparencia/chave-api-dados`.
 4. **Permissões (IAM Role `transparencia-ingestao-worker-role`)** — policy inline com:
-   - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-training/*` (objetos);
-   - **`s3:ListBucket`** no `arn:aws:s3:::transparencia-datalake-us-east-1-training` (o bucket, **sem** `/*`);
+   - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*` (objetos);
+   - **`s3:ListBucket`** no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>` (o bucket, **sem** `/*`);
    - `secretsmanager:GetSecretValue` no ARN do segredo;
    - logs no CloudWatch (já vem no `AWSLambdaBasicExecutionRole`).
    > ⚠️ **Gotcha real:** sem `s3:ListBucket`, um `GetObject` num objeto que **ainda não existe**

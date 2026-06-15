@@ -16,7 +16,7 @@ Responder a pergunta do projeto com SQL: **quais os 15 municípios que MAIS e qu
 
 ## 🪜 Passo a passo (console)
 1. Athena → *Query editor*. Na 1ª vez, configure o **local de resultados** no S3:
-   `s3://transparencia-datalake-us-east-1-training/athena-results/`
+   `s3://transparencia-datalake-us-east-1-<projectname>/athena-results/`
    (*Settings → Manage → Query result location*).
 2. **Catalogar na mão (DDL)** — alternativa ao Crawler; o aluno **vê o schema**. Rode no editor:
    ```sql
@@ -29,7 +29,7 @@ Responder a pergunta do projeto com SQL: **quais os 15 municípios que MAIS e qu
      valor double, qtd_beneficiados bigint
    ) PARTITIONED BY (ano int, mes int)
    STORED AS PARQUET
-   LOCATION 's3://transparencia-datalake-us-east-1-training/curated/bolsa_familia/';
+   LOCATION 's3://transparencia-datalake-us-east-1-<projectname>/curated/bolsa_familia/';
 
    -- descobre as partições ano=/mes= já existentes (sem isso, a tabela retorna 0 linhas)
    MSCK REPAIR TABLE transparencia.bolsa_familia;
@@ -41,7 +41,7 @@ Responder a pergunta do projeto com SQL: **quais os 15 municípios que MAIS e qu
      mesorregiao string, microrregiao string
    ) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
    STORED AS TEXTFILE
-   LOCATION 's3://transparencia-datalake-us-east-1-training/raw/dim_municipios/'
+   LOCATION 's3://transparencia-datalake-us-east-1-<projectname>/raw/dim_municipios/'
    TBLPROPERTIES ('skip.header.line.count'='1');
    ```
    > 💡 Rode o `MSCK REPAIR TABLE` de novo sempre que surgir um `ano/mes` novo no curated.
