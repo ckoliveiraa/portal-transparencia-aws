@@ -24,6 +24,8 @@ Preparar uma conta AWS segura e pronta para o curso, sem sustos na fatura.
    - *Billing* → *Billing preferences* → ative *Receive Billing Alerts*.
    - CloudWatch (região us-east-1) → *Alarms* → *Create alarm* → métrica `EstimatedCharges` → limite ex.: **US$ 5** → notifica seu e-mail (SNS).
 5. **Instalar e configurar o AWS CLI**:
+   - 📥 **Download/instalação (oficial):** https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+     (Windows: instalador `.msi` em https://awscli.amazonaws.com/AWSCLIV2.msi)
    ```bash
    aws --version
    aws configure        # informe Access Key, Secret, região (us-east-1), output json
