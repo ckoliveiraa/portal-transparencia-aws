@@ -14,7 +14,6 @@ reais do **Portal da Transparência** (Novo Bolsa Família) e do **IBGE** (munic
 
 ![Arquitetura AWS do pipeline](docs/arquitetura-aws.png)
 
-📐 Fonte editável do diagrama acima: [`docs/arquitetura-aws.drawio`](docs/arquitetura-aws.drawio).
 Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](docs/arquitetura.md).
 
 ## Trilha de módulos
