@@ -3,7 +3,7 @@
 ## 🎯 Objetivo
 Orquestrar a ingestão de ponta a ponta com uma **máquina de estados**: reinvocar a Lambda
 worker em **lotes** até o mês fechar e, ao concluir, disparar o **Glue** — tudo num fluxo só,
-que **para sozinho**. Substitui o agendador (EventBridge) por orquestração explícita.
+que **para sozinho** — orquestração explícita, sem agendador externo.
 
 ## 🧠 Conceitos
 - **AWS Step Functions**: serviço de orquestração serverless; você descreve um fluxo como uma
@@ -39,7 +39,7 @@ IngestarLote (invoke worker) ──> MesFechou? (Choice no concluido)
 
 ```json
 {
-  "Comment": "Orquestra a ingestao do Bolsa Familia: repete a Lambda worker em lotes ate o mes fechar (checkpoint + idempotencia) e, ao concluir, dispara o Glue para gerar o curated. Substitui o EventBridge Scheduler — para sozinho quando concluido=true.",
+  "Comment": "Orquestra a ingestao do Bolsa Familia: repete a Lambda worker em lotes ate o mes fechar (checkpoint + idempotencia) e, ao concluir, dispara o Glue para gerar o curated. Para sozinho quando concluido=true.",
   "StartAt": "IngestarLote",
   "States": {
     "IngestarLote": {
@@ -116,9 +116,9 @@ IngestarLote (invoke worker) ──> MesFechou? (Choice no concluido)
    - 👀 O gráfico mostra `IngestarLote` rodando em loop com `MesFechou?` até `concluido: true`,
      depois `TransformarGlue` (espera o Glue) e `Concluido`.
 
-> 🔑 **Sem EventBridge:** quem repete os lotes agora é o **Choice** da máquina, não um agendador.
-> Para uma cadência mensal automática, dá pra um EventBridge Scheduler só **iniciar** a execução
-> (StartExecution) uma vez por mês — mas isso é opcional e fora do fluxo base.
+> 🔑 **Sem agendador:** quem repete os lotes é o **Choice** da máquina, e a execução termina
+> sozinha. Para uma cadência mensal automática, um agendador externo (cron) poderia só **iniciar**
+> a execução (`StartExecution`) uma vez por mês — opcional e fora do fluxo base.
 
 ### Pela CLI (resumo)
 ```bash
@@ -150,7 +150,7 @@ aws stepfunctions start-execution \
 - O custo real do fluxo é o do **Glue** (não tem Free Tier) e da Lambda (coberta) — não do SFN.
 
 ## 🧹 Limpeza
-- Não há agendador rodando para sempre (essa era a dor do EventBridge): a execução termina
-  sozinha. Para remover de vez: Step Functions → *Delete state machine* (Módulo 09).
+- Não há agendador rodando para sempre: a execução termina sozinha. Para remover de vez:
+  Step Functions → *Delete state machine* (Módulo 09).
 
 ➡️ Próximo: [Módulo 06 — Glue (transformação)](../06-glue-transformacao/README.md)
