@@ -63,7 +63,7 @@ portal-transparencia-aws/
    python -m venv .venv
    ./.venv/Scripts/python.exe -m pip install -r src/lambda/requirements.txt
    ./.venv/Scripts/python.exe src/build_dim_municipios.py
-   ./.venv/Scripts/python.exe src/ingestao_api.py --ano 2024 --mes 1 --uf SP --limite 5
+   ./.venv/Scripts/python.exe src/ingestao_api.py --ano 2026 --mes 4 --uf SP --limite 5
    ```
 4. Siga os módulos em ordem, do **00** ao **09**.
 
