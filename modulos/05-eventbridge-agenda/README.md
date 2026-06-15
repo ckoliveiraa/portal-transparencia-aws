@@ -46,6 +46,6 @@ Quando a Lambda gravar `_SUCCESS` (mês completo), as próximas execuções só 
 - EventBridge Scheduler: **14M invocações/mês grátis**. Nosso uso → **zero**.
 
 ## 🧹 Limpeza
-- **Importante**: desabilite/exclua o schedule para a Lambda não rodar para sempre. Detalhe no Módulo 10.
+- **Importante**: desabilite/exclua o schedule para a Lambda não rodar para sempre. Detalhe no Módulo 09.
 
 ➡️ Próximo: [Módulo 06 — Glue (transformação)](../06-glue-transformacao/README.md)

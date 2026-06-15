@@ -36,6 +36,6 @@ Deve listar `bolsa_familia` e `dim_municipios`. No console do Athena elas aparec
 - Catalog: **1 milhão de objetos armazenados grátis** + 1M de requisições/mês. Crawler: ~US$ 0,44/DPU-h enquanto roda (segundos). → **centavos ou zero**.
 
 ## 🧹 Limpeza
-- Remova crawlers, tabelas e o database no Módulo 10 (`aws glue delete-database --name transparencia`).
+- Remova crawlers, tabelas e o database no Módulo 09 (`aws glue delete-database --name transparencia`).
 
 ➡️ Próximo: [Módulo 08 — Athena](../08-athena-analise/README.md)

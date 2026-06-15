@@ -17,13 +17,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
-# AWS / IaC
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
-terraform/build/
-tf.plan
+# AWS
 .aws-sam/
 layer/
 *-layer.zip

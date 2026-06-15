@@ -5,8 +5,8 @@ completo na AWS — do consumo de **API** até a análise em **SQL** — usando 
 reais do **Portal da Transparência** (Novo Bolsa Família) e do **IBGE** (municípios).
 
 > **Para quem é:** iniciantes em engenharia de dados / AWS.
-> **Como funciona:** cada módulo monta uma peça da arquitetura **primeiro no console**
-> (para você ver e entender o serviço) e, no fim, tudo é recriado em **Terraform** (IaC).
+> **Como funciona:** cada módulo monta uma peça da arquitetura **direto no console**
+> (para você ver e entender o serviço) e validar o pipeline ponta a ponta.
 > **Custo:** focado no **Free Tier** — cada módulo traz o aviso de custo e a limpeza.
 
 ## O que você vai construir
@@ -24,10 +24,12 @@ API Portal Transparência ──> [Lambda worker em LOTES] ──> S3 RAW (bronz
                                                    [Glue Crawler → Data Catalog]
                                                                 │
                                                      Athena (SQL: top 15 +/-)
-      Tudo: IAM (least privilege) · CloudWatch (logs) · Terraform (módulo final)
+      Tudo: IAM (least privilege) · CloudWatch (logs)
 ```
 
-📐 **Diagrama de arquitetura** (Mermaid + imagem): [`docs/arquitetura-diagrama.md`](docs/arquitetura-diagrama.md).
+![Arquitetura AWS do pipeline](docs/arquitetura-aws.png)
+
+📐 Fonte editável do diagrama acima: [`docs/arquitetura-aws.drawio`](docs/arquitetura-aws.drawio).
 Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](docs/arquitetura.md).
 
 ## Trilha de módulos
@@ -43,15 +45,14 @@ Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](do
 | 06 | [Glue (PySpark)](modulos/06-glue-transformacao/README.md) | ETL com Spark, achatar JSON, Parquet, partição |
 | 07 | [Glue Crawler / Catalog](modulos/07-glue-catalog-crawler/README.md) | Descoberta de schema, metastore, tabelas |
 | 08 | [Athena](modulos/08-athena-analise/README.md) | SQL serverless; **capstone: top 15 que mais/menos recebem** |
-| 09 | [Terraform (IaC)](modulos/09-terraform-iac/README.md) | Recriar toda a stack como código reprodutível |
-| 10 | [Monitoramento & limpeza](modulos/10-monitoramento-limpeza/README.md) | CloudWatch, custos e **teardown** para não gerar cobrança |
+| 09 | [Monitoramento & limpeza](modulos/09-monitoramento-limpeza/README.md) | CloudWatch, custos e **teardown** para não gerar cobrança |
 
 ## Estrutura do repositório
 
 ```
 portal-transparencia-aws/
 ├── README.md                     # este índice
-├── docs/                         # api-limites, api-endpoints, arquitetura
+├── docs/                         # api-limites, api-endpoints, arquitetura (+ diagrama .png/.drawio)
 ├── modulos/                      # 00–10: um README didático por módulo
 ├── src/
 │   ├── build_dim_municipios.py   # gera a dim (IBGE) — 5.571 municípios
@@ -62,7 +63,6 @@ portal-transparencia-aws/
 │       └── requirements.txt
 ├── glue/job_bolsa_familia.py     # Glue PySpark: raw JSON → curated Parquet
 ├── sql/rankings.sql              # Athena: top 15 mais/menos (+ per capita)
-├── terraform/                    # IaC de toda a stack (módulo 09)
 ├── .env / .env.example           # chave da API (NÃO versionada)
 └── data/                         # local, gitignored (dim + amostras raw)
 ```

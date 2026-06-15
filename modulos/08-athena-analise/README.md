@@ -54,6 +54,6 @@ crie uma `dim_populacao(codigo_ibge, populacao)` e use a última query do `ranki
 - Athena cobra ~US$ 5/TB escaneado. Nossos dados (MBs) → **fração de centavo**. Parquet + partição mantêm isso mínimo.
 
 ## 🧹 Limpeza
-- Esvazie `s3://.../athena-results/` de tempos em tempos (Módulo 10).
+- Esvazie `s3://.../athena-results/` de tempos em tempos (Módulo 09).
 
-➡️ Próximo: [Módulo 09 — Terraform (IaC)](../09-terraform-iac/README.md)
+➡️ Próximo: [Módulo 09 — Monitoramento & limpeza](../09-monitoramento-limpeza/README.md)

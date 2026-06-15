@@ -18,7 +18,7 @@ API Portal Transparência ──> [Lambda worker em LOTES] ──> S3 RAW (bronz
                                                    [Glue Crawler → Data Catalog]
                                                                 │
                                                      Athena (SQL: top 15 +/-)
-      Tudo: IAM (least privilege) · CloudWatch (logs) · Terraform (módulo final)
+      Tudo: IAM (least privilege) · CloudWatch (logs)
 ```
 
 ## Camadas do data lake
@@ -45,8 +45,7 @@ tratado** (otimizado para consulta) é um princípio central de engenharia de da
 | **Glue (Job)** | ETL Spark: transforma JSON bruto em Parquet | 06 |
 | **Glue (Crawler/Catalog)** | Descobre o schema e cria as tabelas (metastore) | 07 |
 | **Athena** | Consulta SQL serverless sobre o S3 | 08 |
-| **CloudWatch** | Logs e métricas das Lambdas e jobs | 04, 10 |
-| **Terraform** | Infraestrutura como código (recria tudo) | 09 |
+| **CloudWatch** | Logs e métricas das Lambdas e jobs | 04, 09 |
 
 ## Por que a ingestão é em lotes (e não paralela)
 
@@ -70,8 +69,8 @@ rate limiting, retry com backoff, time budget, particionamento**.
 - **Lambda em lotes** (em vez de Fargate/Glue Python Shell): foca o aprendizado em
   Lambda, idempotência e checkpoint. Para um job de 3h "de verdade", Fargate seria o
   encaixe mais natural — fica como nota de evolução.
-- **Console primeiro, Terraform depois**: o aluno vê cada serviço na mão antes de
-  automatizar com IaC.
+- **Tudo no console**: o aluno vê e configura cada serviço na mão, entendendo o que
+  cada peça faz antes de pensar em automação (IaC fica como evolução de fase 2).
 
 ## Fora de escopo (fase 2)
 

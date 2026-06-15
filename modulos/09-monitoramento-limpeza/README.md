@@ -1,4 +1,4 @@
-# Módulo 10 — Monitoramento e limpeza
+# Módulo 09 — Monitoramento e limpeza
 
 ## 🎯 Objetivo
 Observar o pipeline (logs/métricas) e **desmontar tudo** para não gerar cobranças.
@@ -19,7 +19,7 @@ Observar o pipeline (logs/métricas) e **desmontar tudo** para não gerar cobran
 4. **Billing**: confira *Billing* → *Cost Explorer* para ver o gasto por serviço.
 
 ## 🧹 Parte B — Limpeza (na ordem)
-> Se você usou Terraform (Módulo 09): basta `terraform destroy`. Para o que foi feito no console:
+> Remova os recursos criados no console, na ordem abaixo:
 
 ```bash
 # 1) Desabilitar/excluir o schedule (senão a Lambda roda para sempre)
@@ -56,7 +56,7 @@ aws s3 rb s3://transparencia-datalake-SEUNOME
 
 ## 🎓 Fim da trilha
 Você construiu um pipeline de dados serverless completo: **API → Lambda → S3 → Glue → Athena**,
-com IaC e boas práticas. Próximos passos (fase 2): Step Functions, QuickSight, CI/CD e
+com boas práticas de segurança e custo. Próximos passos (fase 2): Step Functions, QuickSight, CI/CD e
 drill-down por beneficiário.
 
 ⬅️ Voltar ao [índice do curso](../../README.md)

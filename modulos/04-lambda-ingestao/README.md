@@ -68,6 +68,6 @@ gravando no S3, com **checkpoint**, **idempotência** e **retry de rate limit**.
 - Lambda: **1M requisições/mês grátis** + 400k GB-s. Nossas ~14 invocações/mês → **zero**.
 
 ## 🧹 Limpeza
-- A função fica para o Módulo 05. Para apagar: Lambda → *Delete function* (faremos no Módulo 10).
+- A função fica para o Módulo 05. Para apagar: Lambda → *Delete function* (faremos no Módulo 09).
 
 ➡️ Próximo: [Módulo 05 — EventBridge](../05-eventbridge-agenda/README.md)

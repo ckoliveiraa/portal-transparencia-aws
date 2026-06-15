@@ -42,7 +42,7 @@ A Lambda precisará da permissão IAM `secretsmanager:GetSecretValue` nesse segr
 2. Compare o custo: Secrets Manager (~US$ 0,40/mês) vs Parameter Store `SecureString` (grátis até certo limite).
 
 ## 💲 Custos / Free Tier
-- Secrets Manager **não tem Free Tier**: ~**US$ 0,40/segredo/mês** + frações de centavo por 10k chamadas. Insignificante, mas existe — por isso o Módulo 10 remove o segredo.
+- Secrets Manager **não tem Free Tier**: ~**US$ 0,40/segredo/mês** + frações de centavo por 10k chamadas. Insignificante, mas existe — por isso o Módulo 09 remove o segredo.
 
 ## 🧹 Limpeza
 ```bash
