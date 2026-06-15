@@ -74,6 +74,7 @@ A **segunda fonte** do projeto. Como o Portal exige o **`codigoIbge`** de cada m
 da lista oficial dos 5.571 municípios brasileiros. Quem fornece é a **API de Localidades do IBGE** —
 pública, **sem chave e sem rate limit** (dados abertos).
 
+- **Documentação oficial:** https://servicodados.ibge.gov.br/api/docs/
 - **Endpoint:** `GET https://servicodados.ibge.gov.br/api/v1/localidades/municipios`
 - **Retorno:** um **array JSON com todos os municípios** numa **única requisição**, com a hierarquia
   aninhada (município → micro/mesorregião → UF → região).
