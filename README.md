@@ -47,6 +47,7 @@ portal-transparencia-aws/
 │       └── requirements.txt
 ├── glue/job_bolsa_familia.py     # Glue PySpark: raw JSON → curated Parquet
 ├── stepfunctions/                # ASL da máquina de estados (orquestração)
+├── iam/                          # policies de menor privilégio (worker, dim, trust)
 ├── sql/rankings.sql              # Athena: top 15 mais/menos (+ per capita)
 ├── .env / .env.example           # chave da API (NÃO versionada)
 └── data/                         # local, gitignored (dim + amostras raw)

@@ -336,7 +336,9 @@ def handler(event, context):
      |-----|-------|
      | `BUCKET` | `transparencia-datalake-us-east-1-<projectname>` |
      | `SECRET_NAME` | `portal-transparencia/chave-api-dados` |
-4. **Permissões (IAM Role `transparencia-ingestao-worker-role`)** — policy inline com:
+4. **Permissões (IAM Role `transparencia-ingestao-worker-role`)** — policy inline
+   ([`iam/worker-role-policy.json`](../../iam/worker-role-policy.json); trust em
+   [`iam/lambda-trust-policy.json`](../../iam/lambda-trust-policy.json)) com:
    - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*` (objetos);
    - **`s3:ListBucket`** no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>` (o bucket, **sem** `/*`);
    - `secretsmanager:GetSecretValue` no ARN do segredo;
@@ -351,7 +353,8 @@ def handler(event, context):
    - mesma Layer; handler = `handler_dim.handler`; **Timeout 120s** ⚠️ (a dim chama o IBGE com
      `timeout=60`; os **3s** padrão do console não cabem). Memory 256 MB.
    - role: pode reusar a do worker (já tem `PutObject`) ou uma própria só com `s3:PutObject` em
-     `raw/dim_municipios/*`. env var: `BUCKET` (não precisa de `SECRET_NAME`, a API do IBGE é aberta).
+     `raw/dim_municipios/*` ([`iam/dim-role-policy.json`](../../iam/dim-role-policy.json)).
+     env var: `BUCKET` (não precisa de `SECRET_NAME`, a API do IBGE é aberta).
 6. **Ordem de execução importa** — o worker lê a dim do S3, então rode a dim **primeiro**:
    ```bash
    # 6a) popula a dimensão (1 chamada IBGE -> S3)
