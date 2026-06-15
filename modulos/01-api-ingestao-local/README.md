@@ -358,11 +358,6 @@ if __name__ == "__main__":
 - Os JSONs aparecem na estrutura `ano=/mes=/uf=/municipio=`.
 - Rodar o mesmo comando de novo mostra `pulados=5` (idempotência funcionando).
 
-## 🏋️ Exercícios
-1. Colete o estado inteiro de SP (sem `--limite`) e cronometre.
-2. Mude o mês para `--mes 2` e veja o novo particionamento.
-3. Tente sem a chave no `.env` e observe o erro `401`.
-
 ## 💲 Custos / Free Tier
 - **Zero** — tudo roda na sua máquina. A API e o IBGE são gratuitos.
 
