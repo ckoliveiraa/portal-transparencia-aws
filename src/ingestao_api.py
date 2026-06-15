@@ -1,8 +1,8 @@
 """
 Coletor LOCAL da API do Portal da Transparência (Novo Bolsa Família).
 
-Este é o script do Módulo 01 (ingestão local). Ele é deliberadamente
-estruturado para virar a Lambda do Módulo 04 com mudança mínima:
+Coletor local de referência: ele é deliberadamente estruturado para
+virar a Lambda worker do Módulo 04 com mudança mínima:
 a função `coletar_municipio()` é idêntica; só muda "onde gravar"
 (disco local aqui; S3 via boto3 na Lambda).
 

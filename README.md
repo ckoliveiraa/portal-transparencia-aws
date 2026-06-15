@@ -21,7 +21,7 @@ Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](do
 | # | Módulo | Você aprende |
 |---|--------|--------------|
 | 00 | [Setup AWS](modulos/00-setup-aws/README.md) | Conta, IAM, MFA, **alarme de billing**, AWS CLI |
-| 01 | [A API e a chave](modulos/01-api-ingestao-local/README.md) | **Apresentação da API, cadastro no gov.br e obtenção da chave**; primeira chamada; coletor local em Python |
+| 01 | [As APIs e a chave](modulos/01-api-ingestao-local/README.md) | **As duas APIs (Portal da Transparência + IBGE)**, cadastro no gov.br e obtenção da chave; primeira chamada |
 | 02 | [S3 / Data Lake](modulos/02-s3-data-lake/README.md) | Object storage, camadas bronze/silver, particionamento |
 | 03 | [Secrets Manager](modulos/03-secrets-manager/README.md) | Guardar a chave da API com segurança (sem hardcode) |
 | 04 | [Lambda — worker em lotes](modulos/04-lambda-ingestao/README.md) | Serverless, IAM role, Layer, **checkpoint, idempotência, retry 429** |

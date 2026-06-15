@@ -31,11 +31,11 @@ Criar os buckets do data lake e subir os dados brutos (dim + fatos) com particio
    - a **Lambda dim** (`handler_dim.py`) busca os municípios no IBGE e grava
      `raw/dim_municipios/dim_municipios.csv` (Módulo 04);
    - a **Lambda worker** (`handler.py`) busca os fatos e grava
-     `raw/bolsa_familia/ano=/mes=/uf=/...json` (Módulos 04/05).
+     `raw/bolsa_familia/ano=/mes=/uf=/...json` (Módulos 04/06).
 
    Ou seja: neste módulo você só **cria o bucket e entende o layout**. Os dados chegam
-   quando você rodar as Lambdas. (O coletor local do Módulo 01 é apenas para *entender*
-   a API na sua máquina — não faz parte do fluxo da nuvem.)
+   quando você rodar as Lambdas. (No Módulo 01 você conhece as duas APIs; o código que as
+   consome roda como Lambda na nuvem, não localmente.)
 
 ## 🔍 Validação
 - O bucket existe e está vazio:

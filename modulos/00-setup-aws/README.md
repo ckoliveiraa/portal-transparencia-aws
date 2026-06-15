@@ -65,4 +65,4 @@ local a essas credenciais.
 ## 🧹 Limpeza
 - Nada a remover. **Guarde bem** a Access Key (e nunca a comite no Git).
 
-➡️ Próximo: [Módulo 01 — A API e a chave](../01-api-ingestao-local/README.md)
+➡️ Próximo: [Módulo 01 — As APIs e a chave](../01-api-ingestao-local/README.md)

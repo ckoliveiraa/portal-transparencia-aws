@@ -1,20 +1,22 @@
-# Módulo 01 — A API e a chave (ingestão local)
+# Módulo 01 — As APIs e a chave
 
 ## 🎯 Objetivo
-Conhecer a **API do Portal da Transparência**, **cadastrar-se no gov.br para obter a chave
-de acesso**, fazer a primeira chamada e rodar o **coletor local** em Python que será a base
-da nossa Lambda mais à frente.
+Conhecer as **duas APIs** que alimentam o projeto — a **API do Portal da Transparência**
+(os fatos do Novo Bolsa Família) e a **API de Localidades do IBGE** (a dimensão de municípios) —
+e **cadastrar-se no gov.br para obter a chave** do Portal. O código que consome essas APIs vira
+a Lambda no Módulo 04; aqui o foco é **entender as fontes de dados**.
 
 ## 🧠 Conceitos
 - **API REST**: você faz uma requisição HTTP (`GET`) a uma URL e recebe dados (JSON) de volta.
-- **Autenticação por chave (API key)**: a API exige um header `chave-api-dados` para identificar quem chama.
-- **Rate limit**: limite de quantas requisições você pode fazer por minuto.
+- **Autenticação por chave (API key)**: o Portal exige o header `chave-api-dados`. O IBGE é **aberto** (sem chave).
+- **Rate limit**: limite de requisições por minuto — existe no Portal; o **IBGE não tem**.
 - **Paginação**: quando há muitos resultados, eles vêm em "páginas".
-- **Dimensão (dim)**: tabela de referência (aqui, os municípios do IBGE) usada para enriquecer os fatos.
+- **Dimensão (dim)**: tabela de referência (os municípios do IBGE) usada para enriquecer os fatos
+  e como **lista de trabalho** — os 5.571 `codigoIbge` que o coletor percorre.
 
 ---
 
-## 📚 Parte A — Apresentando a API
+## 📚 Parte A — A API do Portal da Transparência (os fatos)
 
 O **Portal da Transparência** publica gastos e benefícios do governo federal. Usaremos o
 programa **Novo Bolsa Família por município**.
@@ -32,6 +34,9 @@ programa **Novo Bolsa Família por município**.
 
 Mais detalhes em [`docs/api-endpoints.md`](../../docs/api-endpoints.md) e os limites em
 [`docs/api-limites.md`](../../docs/api-limites.md).
+
+> 🔑 Repare: o `codigoIbge` é **obrigatório** — é 1 chamada por município. Quem nos dá a lista
+> oficial desses códigos é a **API do IBGE** (Parte C).
 
 ---
 
@@ -63,310 +68,65 @@ curl "https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-p
 
 ---
 
-## 🪜 Parte C — Ingestão local em Python
+## 🗺️ Parte C — A API do IBGE (a dimensão de municípios)
 
-Com a chave no `.env`, vamos coletar de verdade.
+A **segunda fonte** do projeto. Como o Portal exige o **`codigoIbge`** de cada município, precisamos
+da lista oficial dos 5.571 municípios brasileiros. Quem fornece é a **API de Localidades do IBGE** —
+pública, **sem chave e sem rate limit** (dados abertos).
 
-1. **Ambiente e dependências:**
-   ```bash
-   python -m venv .venv
-   ./.venv/Scripts/python.exe -m pip install -r src/lambda/requirements.txt
-   ```
-2. **Gerar a dimensão de municípios** (1 chamada ao IBGE, sem chave):
-   ```bash
-   ./.venv/Scripts/python.exe src/build_dim_municipios.py
-   # -> data/dim_municipios.csv (5.571 municípios)
-   ```
-3. **Coletar os fatos** (Bolsa Família) — comece pequeno para não esperar 3h:
-   ```bash
-   # 5 municípios de SP, ~10s
-   ./.venv/Scripts/python.exe src/ingestao_api.py --ano 2026 --mes 4 --uf SP --limite 5
-   ```
-   Os arquivos saem em `data/raw/bolsa_familia/ano=2026/mes=04/uf=SP/municipio=*.json`
-   (o mesmo layout particionado que usaremos no S3).
+- **Endpoint:** `GET https://servicodados.ibge.gov.br/api/v1/localidades/municipios`
+- **Retorno:** um **array JSON com todos os municípios** numa **única requisição**, com a hierarquia
+  aninhada (município → micro/mesorregião → UF → região).
+- **Sem autenticação e sem limite** de requisições.
 
-> 🔎 Abra `src/ingestao_api.py`: repare no **intervalo de 0,34s** (rate limit), no **retry em 429**
-> e no **skip de arquivos já baixados** (idempotência). Esses três conceitos reaparecem na Lambda.
-
-## 🧩 O código (para copiar)
-
-<details>
-<summary>📄 <code>src/build_dim_municipios.py</code> — gera a dim de municípios (IBGE)</summary>
-
-```python
-"""
-Constrói a dimensão de municípios (dim_municipios) a partir da
-API de Localidades do IBGE — fonte oficial dos códigos IBGE.
-
-Saída: data/dim_municipios.csv  (5.571 municípios)
-
-Não exige chave de API. Uma única requisição traz todos os municípios.
-"""
-
-from __future__ import annotations
-
-import csv
-import sys
-from pathlib import Path
-
-import requests
-
-IBGE_URL = "https://servicodados.ibge.gov.br/api/v1/localidades/municipios"
-
-OUTPUT = Path(__file__).resolve().parent.parent / "data" / "dim_municipios.csv"
-
-COLUNAS = [
-    "codigo_ibge",
-    "municipio",
-    "uf_sigla",
-    "uf_nome",
-    "uf_codigo",
-    "regiao_sigla",
-    "regiao_nome",
-    "mesorregiao",
-    "microrregiao",
-]
-
-
-def achatar(m: dict) -> dict:
-    """Achata a hierarquia aninhada do IBGE em uma linha plana.
-
-    Alguns municípios novos têm `microrregiao = null` (classificação
-    micro/meso descontinuada pelo IBGE). Nesses casos a UF é obtida pela
-    hierarquia nova (regiao-imediata -> regiao-intermediaria -> UF).
-    """
-    micro = m.get("microrregiao")
-    if micro:  # hierarquia antiga (micro/meso) disponível
-        meso = micro["mesorregiao"]
-        uf = meso["UF"]
-        meso_nome = meso["nome"]
-        micro_nome = micro["nome"]
-    else:  # fallback pela hierarquia nova
-        uf = m["regiao-imediata"]["regiao-intermediaria"]["UF"]
-        meso_nome = ""
-        micro_nome = ""
-
-    regiao = uf["regiao"]
-    return {
-        "codigo_ibge": m["id"],
-        "municipio": m["nome"],
-        "uf_sigla": uf["sigla"],
-        "uf_nome": uf["nome"],
-        "uf_codigo": uf["id"],
-        "regiao_sigla": regiao["sigla"],
-        "regiao_nome": regiao["nome"],
-        "mesorregiao": meso_nome,
-        "microrregiao": micro_nome,
+### Exemplo
+```bash
+curl "https://servicodados.ibge.gov.br/api/v1/localidades/municipios" \
+  -H "accept: application/json"
+```
+Amostra (1 município, resumida):
+```json
+[
+  {
+    "id": 3550308,
+    "nome": "São Paulo",
+    "microrregiao": {
+      "mesorregiao": {
+        "UF": {
+          "sigla": "SP", "nome": "São Paulo",
+          "regiao": { "sigla": "SE", "nome": "Sudeste" }
+        }
+      }
     }
-
-
-def main() -> int:
-    print(f"Baixando municípios do IBGE: {IBGE_URL}")
-    resp = requests.get(IBGE_URL, headers={"accept": "application/json"}, timeout=60)
-    resp.raise_for_status()
-    municipios = resp.json()
-    print(f"  {len(municipios)} municípios recebidos")
-
-    linhas = [achatar(m) for m in municipios]
-    # ordena por UF e nome para facilitar leitura
-    linhas.sort(key=lambda r: (r["uf_sigla"], r["municipio"]))
-
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    with OUTPUT.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=COLUNAS)
-        writer.writeheader()
-        writer.writerows(linhas)
-
-    print(f"OK -> {OUTPUT}  ({len(linhas)} linhas)")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+  }
+]
 ```
+O campo **`id`** é justamente o **código IBGE** que o Portal pede (`codigoIbge`).
 
-</details>
+### Da API para a dimensão (`dim_municipios`)
+O script `src/build_dim_municipios.py` faz **1 chamada** ao IBGE, **achata** essa hierarquia em
+colunas planas e produz a dim (5.571 linhas):
 
-<details>
-<summary>📄 <code>src/ingestao_api.py</code> — coletor local dos fatos (Bolsa Família)</summary>
+`codigo_ibge · municipio · uf_sigla · uf_nome · uf_codigo · regiao_sigla · regiao_nome · mesorregiao · microrregiao`
 
-```python
-"""
-Coletor LOCAL da API do Portal da Transparência (Novo Bolsa Família).
+> 🔎 **Neste curso não rodamos a coleta localmente.** Esse mesmo código vira a **Lambda dim**
+> (Módulo 04), que grava `dim_municipios` direto no **S3** — você verá o código lá. Aqui o objetivo
+> é só **entender de onde vêm os dados** e por que precisamos de **duas** APIs.
 
-Este é o script do Módulo 01 (ingestão local). Ele é deliberadamente
-estruturado para virar a Lambda do Módulo 04 com mudança mínima:
-a função `coletar_municipio()` é idêntica; só muda "onde gravar"
-(disco local aqui; S3 via boto3 na Lambda).
+> ⚠️ Detalhe real do IBGE: alguns municípios novos têm `microrregiao = null` (a classificação
+> micro/mesorregião foi descontinuada). Nesses casos a UF vem pela hierarquia nova
+> (`regiao-imediata → regiao-intermediaria → UF`) — o `build_dim` já trata isso.
 
-Conceitos demonstrados:
-  - autenticação por header (chave-api-dados)
-  - rate limit (1 req a cada ~0,34s => <= 180/min, API restrita)
-  - retry com backoff em caso de 429 (Too Many Requests)
-  - idempotência (pula município cujo JSON já existe)
-  - particionamento estilo data lake: ano=/mes=/uf=
-
-Uso:
-  python src/ingestao_api.py --ano 2026 --mes 4                # país inteiro (~30 min)
-  python src/ingestao_api.py --ano 2026 --mes 4 --limite 5     # teste rápido
-  python src/ingestao_api.py --ano 2026 --mes 4 --uf SP        # só uma UF
-"""
-
-from __future__ import annotations
-
-import argparse
-import csv
-import json
-import sys
-import time
-from pathlib import Path
-
-import requests
-
-# ----------------------------------------------------------------------
-# Configuração
-# ----------------------------------------------------------------------
-RAIZ = Path(__file__).resolve().parent.parent
-DIM_CSV = RAIZ / "data" / "dim_municipios.csv"
-RAW_DIR = RAIZ / "data" / "raw" / "bolsa_familia"
-
-BASE_URL = "https://api.portaldatransparencia.gov.br/api-de-dados"
-ENDPOINT = "/novo-bolsa-familia-por-municipio"
-
-# A 180 req/min (API restrita) o intervalo mínimo é ~0,33s; usamos 0,34s de margem.
-INTERVALO_SEG = 0.34
-MAX_TENTATIVAS = 5      # tentativas em caso de 429 / erro transitório
-# Se estourar o limite (429), 0,34s não basta para limpar a janela de 1 min:
-# espera a partir de uma base maior (e honra o header Retry-After quando vier).
-BACKOFF_429_SEG = 5.0
-
-
-def carregar_chave() -> str:
-    """Lê PORTAL_TRANSPARENCIA_API_KEY do ambiente ou do arquivo .env local."""
-    import os
-
-    chave = os.environ.get("PORTAL_TRANSPARENCIA_API_KEY")
-    if chave:
-        return chave
-
-    env_path = RAIZ / ".env"
-    if env_path.exists():
-        for linha in env_path.read_text(encoding="utf-8").splitlines():
-            linha = linha.strip()
-            if linha.startswith("#") or "=" not in linha:
-                continue
-            nome, _, valor = linha.partition("=")
-            if nome.strip() == "PORTAL_TRANSPARENCIA_API_KEY":
-                return valor.strip()
-
-    sys.exit("ERRO: defina PORTAL_TRANSPARENCIA_API_KEY no ambiente ou no .env")
-
-
-def carregar_municipios(uf_filtro: str | None) -> list[dict]:
-    """Lê a dim de municípios (lista de trabalho). Opcionalmente filtra por UF."""
-    if not DIM_CSV.exists():
-        sys.exit(f"ERRO: dim não encontrada em {DIM_CSV}. Rode build_dim_municipios.py antes.")
-    with DIM_CSV.open(encoding="utf-8") as f:
-        linhas = list(csv.DictReader(f))
-    if uf_filtro:
-        linhas = [m for m in linhas if m["uf_sigla"] == uf_filtro.upper()]
-    return linhas
-
-
-def caminho_saida(ano: int, mes: int, uf: str, codigo: str) -> Path:
-    """Caminho particionado estilo data lake — espelha o layout do S3."""
-    return RAW_DIR / f"ano={ano}" / f"mes={mes:02d}" / f"uf={uf}" / f"municipio={codigo}.json"
-
-
-def coletar_municipio(sessao: requests.Session, chave: str, mes_ano: str, codigo: str) -> list:
-    """Faz 1 chamada à API para um município/mês. Trata 429 com backoff.
-
-    Esta função é o "coração portável": vai para a Lambda sem alteração.
-    """
-    url = f"{BASE_URL}{ENDPOINT}"
-    params = {"mesAno": mes_ano, "codigoIbge": codigo, "pagina": 1}
-    headers = {"accept": "*/*", "chave-api-dados": chave}
-
-    for tentativa in range(1, MAX_TENTATIVAS + 1):
-        resp = sessao.get(url, params=params, headers=headers, timeout=30)
-        if resp.status_code == 200:
-            return resp.json()
-        if resp.status_code == 429:
-            # honra Retry-After (segundos) se a API mandar; senão, backoff exponencial
-            espera = float(resp.headers.get("Retry-After",
-                                            BACKOFF_429_SEG * (2 ** (tentativa - 1))))
-            print(f"  429 (rate limit) em {codigo}; aguardando {espera:.1f}s "
-                  f"(tentativa {tentativa}/{MAX_TENTATIVAS})")
-            time.sleep(espera)
-            continue
-        resp.raise_for_status()  # outros erros: estoura
-    raise RuntimeError(f"Falha em {codigo} após {MAX_TENTATIVAS} tentativas (429 persistente)")
-
-
-def main() -> int:
-    p = argparse.ArgumentParser(description="Coletor Bolsa Família por município")
-    p.add_argument("--ano", type=int, required=True)
-    p.add_argument("--mes", type=int, required=True, choices=range(1, 13))
-    p.add_argument("--uf", help="filtra por UF (ex.: SP); padrão = todas")
-    p.add_argument("--limite", type=int, help="processa só os N primeiros (teste)")
-    args = p.parse_args()
-
-    chave = carregar_chave()
-    mes_ano = f"{args.ano}{args.mes:02d}"
-    municipios = carregar_municipios(args.uf)
-    if args.limite:
-        municipios = municipios[: args.limite]
-
-    total = len(municipios)
-    print(f"Coletando {total} municípios para {mes_ano} "
-          f"(intervalo {INTERVALO_SEG}s, ~{total * INTERVALO_SEG / 60:.0f} min)")
-
-    sessao = requests.Session()
-    baixados = pulados = vazios = 0
-
-    for i, m in enumerate(municipios, start=1):
-        codigo, uf = m["codigo_ibge"], m["uf_sigla"]
-        destino = caminho_saida(args.ano, args.mes, uf, codigo)
-
-        # IDEMPOTÊNCIA: se já baixamos, pula (não gasta chamada)
-        if destino.exists():
-            pulados += 1
-            continue
-
-        dados = coletar_municipio(sessao, chave, mes_ano, codigo)
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
-
-        if dados:
-            baixados += 1
-        else:
-            vazios += 1  # município sem registro no mês (array vazio)
-
-        if i % 50 == 0 or i == total:
-            print(f"  {i}/{total} | baixados={baixados} pulados={pulados} vazios={vazios}")
-
-        # RATE LIMIT: respeita o intervalo entre chamadas reais
-        time.sleep(INTERVALO_SEG)
-
-    print(f"OK -> {RAW_DIR}  (baixados={baixados}, pulados={pulados}, vazios={vazios})")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
-```
-
-</details>
-
-## 🔍 Validação
-- `data/dim_municipios.csv` tem 5.571 linhas (+1 cabeçalho).
-- Os JSONs aparecem na estrutura `ano=/mes=/uf=/municipio=`.
-- Rodar o mesmo comando de novo mostra `pulados=5` (idempotência funcionando).
+## 🔍 Validação (entendimento)
+- A chamada ao **Portal** (com a chave) retorna `200` com o valor pago + nº de beneficiários do município.
+- A chamada ao **IBGE** retorna os **5.571 municípios** num único array.
+- Você sabe explicar por que precisamos das **duas** APIs: o **IBGE** dá a *lista de códigos*; o
+  **Portal** dá os *valores* por código.
 
 ## 💲 Custos / Free Tier
-- **Zero** — tudo roda na sua máquina. A API e o IBGE são gratuitos.
+- **Zero** — as duas APIs são gratuitas e nada foi criado na AWS ainda.
 
 ## 🧹 Limpeza
-- Nada na AWS ainda. Para limpar local: apague `data/raw/`.
+- Nada a remover (nada criado localmente nem na AWS).
 
 ➡️ Próximo: [Módulo 02 — S3 / Data Lake](../02-s3-data-lake/README.md)
