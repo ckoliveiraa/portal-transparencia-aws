@@ -1,0 +1,17 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvocarWorker",
+      "Effect": "Allow",
+      "Action": "lambda:InvokeFunction",
+      "Resource": "arn:aws:lambda:us-east-1:<conta>:function:transparencia-ingestao-worker"
+    },
+    {
+      "Sid": "RodarGlueJobSync",
+      "Effect": "Allow",
+      "Action": ["glue:StartJobRun", "glue:GetJobRun", "glue:BatchStopJobRun"],
+      "Resource": "arn:aws:glue:us-east-1:<conta>:job/transparencia-glue-bolsa-familia"
+    }
+  ]
+}

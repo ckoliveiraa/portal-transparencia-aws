@@ -149,6 +149,61 @@ job.commit()
 
 </details>
 
+## 🔐 IAM — policies (prontas para copiar)
+A role `transparencia-glue-role` usa trust em `glue.amazonaws.com`, a managed
+`AWSGlueServiceRole` **e** a inline S3 abaixo (arquivos em [`iam/`](../../iam/); troque `<projectname>`).
+
+<details>
+<summary>📄 <code>iam/glue-trust-policy.json</code> — trust (quem assume a role)</summary>
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "glue.amazonaws.com" },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary>📄 <code>iam/glue-role-policy.json</code> — inline (S3: ler raw, escrever curated)</summary>
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "LerRaw",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*"
+    },
+    {
+      "Sid": "EscreverCurated",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/curated*"
+    },
+    {
+      "Sid": "ListarBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>"
+    }
+  ]
+}
+```
+
+> ⚠️ `curated*` (sem `/`) é proposital — ver o gotcha do `curated_$folder$` abaixo.
+
+</details>
+
 ## 🪜 Passo a passo (console)
 1. **Subir o script** para o S3: `s3://transparencia-datalake-us-east-1-<projectname>/scripts/job_bolsa_familia.py`.
 2. Glue → *ETL jobs* → *Script editor* → cole/aponte o script. Tipo: **Spark**, Python.

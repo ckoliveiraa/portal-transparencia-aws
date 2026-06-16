@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "LerRaw",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*"
+    },
+    {
+      "Sid": "EscreverCurated",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/curated*"
+    },
+    {
+      "Sid": "ListarBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>"
+    }
+  ]
+}

@@ -309,6 +309,79 @@ def handler(event, context):
 
 </details>
 
+## 🔐 IAM — policies (prontas para copiar)
+Cada Lambda tem sua role: trust comum (`lambda.amazonaws.com`) + a managed
+`AWSLambdaBasicExecutionRole` (logs) + a inline abaixo (arquivos em [`iam/`](../../iam/);
+troque `<projectname>` e `<conta>`).
+
+<details>
+<summary>📄 <code>iam/lambda-trust-policy.json</code> — trust (vale p/ worker e dim)</summary>
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "lambda.amazonaws.com" },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary>📄 <code>iam/worker-role-policy.json</code> — inline do worker (S3 + Secrets)</summary>
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3Objetos",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Resource": "arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*"
+    },
+    {
+      "Sid": "S3ListBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>"
+    },
+    {
+      "Sid": "LerSegredo",
+      "Effect": "Allow",
+      "Action": "secretsmanager:GetSecretValue",
+      "Resource": "arn:aws:secretsmanager:us-east-1:<conta>:secret:portal-transparencia/chave-api-dados-*"
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary>📄 <code>iam/dim-role-policy.json</code> — inline do dim (só grava a dim)</summary>
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "GravarDim",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/raw/dim_municipios/*"
+    }
+  ]
+}
+```
+
+</details>
+
 ## 🪜 Passo a passo (console)
 > Runtime do curso: **Python 3.14** em todas as Lambdas.
 

@@ -100,9 +100,56 @@ IngestarLote (invoke worker) ──> MesFechou? (Choice no concluido)
 
 </details>
 
+## 🔐 IAM — policies (prontas para copiar)
+A role `transparencia-sfn-role` usa trust em `states.amazonaws.com` + uma policy inline
+(arquivos em [`iam/`](../../iam/); troque `<conta>`).
+
+<details>
+<summary>📄 <code>iam/sfn-trust-policy.json</code> — trust (quem assume a role)</summary>
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "states.amazonaws.com" },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary>📄 <code>iam/sfn-role-policy.json</code> — inline (invocar worker + rodar Glue)</summary>
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvocarWorker",
+      "Effect": "Allow",
+      "Action": "lambda:InvokeFunction",
+      "Resource": "arn:aws:lambda:us-east-1:<conta>:function:transparencia-ingestao-worker"
+    },
+    {
+      "Sid": "RodarGlueJobSync",
+      "Effect": "Allow",
+      "Action": ["glue:StartJobRun", "glue:GetJobRun", "glue:BatchStopJobRun"],
+      "Resource": "arn:aws:glue:us-east-1:<conta>:job/transparencia-glue-bolsa-familia"
+    }
+  ]
+}
+```
+
+</details>
+
 ## 🪜 Passo a passo (console)
 1. **IAM Role da state machine** (`transparencia-sfn-role`), trust em `states.amazonaws.com`,
-   com permissão para:
+   com permissão para (JSONs acima):
    - `lambda:InvokeFunction` no `transparencia-ingestao-worker`;
    - `glue:StartJobRun`, `glue:GetJobRun`, `glue:BatchStopJobRun` no job (o `.sync` precisa do
      `GetJobRun` para acompanhar).
