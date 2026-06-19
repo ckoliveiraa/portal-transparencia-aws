@@ -309,31 +309,19 @@ def handler(event, context):
 
 </details>
 
-## 🔐 IAM — policies (prontas para copiar)
-Cada Lambda tem sua role: trust comum (`lambda.amazonaws.com`) + a managed
-`AWSLambdaBasicExecutionRole` (logs) + a inline abaixo (arquivos em [`iam/`](../../iam/);
-troque `<projectname>` e `<conta>`).
+## 🪜 Passo a passo (tudo pela console)
+> Runtime do curso: **Python 3.14** em todas as Lambdas.
+> **Ordem que vamos seguir:** 1️⃣ policies → 2️⃣ roles → 3️⃣ Lambdas → 4️⃣ executar.
+> Cada peça depende da anterior (a role anexa a policy; a Lambda usa a role).
+> Antes de colar os JSONs, troque `<projectname>` (sufixo do bucket) e `<conta>`
+> (ID da conta, 12 dígitos). Os arquivos também estão em [`iam/`](../../iam/).
+
+### 1️⃣ Policies — `IAM → Policies → Create policy → aba JSON`
+Crie **duas** policies (uma para cada Lambda). Em cada uma: cole o JSON → *Next* →
+dê o **nome** indicado → *Create policy*.
 
 <details>
-<summary>📄 <code>iam/lambda-trust-policy.json</code> — trust (vale p/ <code>transparencia-ingestao-worker-role</code> e <code>transparencia-ingestao-dim-role</code>)</summary>
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": { "Service": "lambda.amazonaws.com" },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-```
-
-</details>
-
-<details>
-<summary>📄 <code>iam/worker-role-policy.json</code> — inline <code>worker-s3-secrets</code> da role <code>transparencia-ingestao-worker-role</code> (S3 + Secrets)</summary>
+<summary>📄 <code>worker-s3-secrets</code> — do worker (S3 Get/Put + ListBucket + ler o segredo)</summary>
 
 ```json
 {
@@ -364,7 +352,7 @@ troque `<projectname>` e `<conta>`).
 </details>
 
 <details>
-<summary>📄 <code>iam/dim-role-policy.json</code> — inline <code>dim-s3-put</code> da role <code>transparencia-ingestao-dim-role</code> (só grava a dim)</summary>
+<summary>📄 <code>dim-s3-put</code> — da dim (só grava a dim)</summary>
 
 ```json
 {
@@ -382,67 +370,92 @@ troque `<projectname>` e `<conta>`).
 
 </details>
 
-## 🪜 Passo a passo (console)
-> Runtime do curso: **Python 3.14** em todas as Lambdas.
+> ⚠️ **Gotcha real:** o `s3:ListBucket` é no ARN do **bucket** (**sem** `/*`). Sem isso, um
+> `GetObject` num objeto que **ainda não existe** (o checkpoint na 1ª execução) retorna
+> **`AccessDenied`** em vez de **`NoSuchKey`** — e o código quebra, porque espera `NoSuchKey`
+> para "começar do zero".
+> 💡 `lambda:InvokeFunction` **não** entra aqui: quem reinvoca o worker em lote é o
+> **Step Functions** (Módulo 06), e essa permissão fica na role da máquina de estados.
 
-1. **A Layer do `requests`** (o `boto3` já vem no runtime; o `requests` **não**). Dois caminhos —
-   usamos o **A** (empacotar a nossa ensina como uma Layer funciona por dentro):
-   - **A) Construir a sua (o que fazemos)**:
-     ```bash
-     mkdir -p layer/python
-     ./.venv/Scripts/python.exe -m pip install requests -t layer/python
-     cd layer && zip -r ../requests-layer.zip python && cd ..
-     ```
-     Lambda → *Layers* → *Create layer* → suba `requests-layer.zip` → runtime **Python 3.14**.
-   - **B) Layer pública Klayers (opção — bom de conhecer)** — não empacota nada, é só informar
-     o ARN (Python 3.14, us-east-1):
-     ```
-     arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5
-     ```
-2. **Criar a função**: Lambda → *Create function* → *Author from scratch* → **Python 3.14**.
-   - Cole o conteúdo de `src/lambda/handler.py`; handler = `handler.handler`.
-   - **Layers → Add a layer:** *Custom layers* (a sua, 1A) **ou** *Specify an ARN* (Klayers, 1B).
-3. **Configurar**:
-   - *Timeout*: **15 min**; *Memory*: 256 MB.
-   - *Environment variables*:
-     | Key | Value |
-     |-----|-------|
-     | `BUCKET` | `transparencia-datalake-us-east-1-<projectname>` |
-     | `SECRET_NAME` | `portal-transparencia/chave-api-dados` |
-4. **Permissões (IAM Role `transparencia-ingestao-worker-role`)** — inline `worker-s3-secrets`
-   ([`iam/worker-role-policy.json`](../../iam/worker-role-policy.json); trust em
-   [`iam/lambda-trust-policy.json`](../../iam/lambda-trust-policy.json)) com:
-   - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*` (objetos);
-   - **`s3:ListBucket`** no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>` (o bucket, **sem** `/*`);
-   - `secretsmanager:GetSecretValue` no ARN do segredo;
-   - logs no CloudWatch (já vem no `AWSLambdaBasicExecutionRole`).
-   > 💡 Quem reinvoca o worker em lote é o **Step Functions** (Módulo 06) — a permissão de
-   > `lambda:InvokeFunction` fica na role da máquina de estados, não aqui.
-   > ⚠️ **Gotcha real:** sem `s3:ListBucket`, um `GetObject` num objeto que **ainda não existe**
-   > (o checkpoint na 1ª execução) retorna **`AccessDenied`** em vez de **`NoSuchKey`** — e o código
-   > quebra, porque ele espera `NoSuchKey` para "começar do zero". A cura é exatamente esse
-   > `s3:ListBucket` no ARN do **bucket**.
-5. **Criar TAMBÉM a Lambda da dim** (`handler_dim.py`) — popula os municípios sem `cp`:
-   - mesma Layer; handler = `handler_dim.handler`; **Timeout 120s** ⚠️ (a dim chama o IBGE com
-     `timeout=60`; os **3s** padrão do console não cabem). Memory 256 MB.
-   - role: pode reusar a do worker (já tem `PutObject`) ou uma própria
-     `transparencia-ingestao-dim-role` com a inline `dim-s3-put` só com `s3:PutObject` em
-     `raw/dim_municipios/*` ([`iam/dim-role-policy.json`](../../iam/dim-role-policy.json)).
-     env var: `BUCKET` (não precisa de `SECRET_NAME`, a API do IBGE é aberta).
-6. **Ordem de execução importa** — o worker lê a dim do S3, então rode a dim **primeiro**:
-   ```bash
-   # 6a) popula a dimensão (1 chamada IBGE -> S3)
-   aws lambda invoke --function-name transparencia-ingestao-dim \
-     --payload '{}' --cli-binary-format raw-in-base64-out dim.json && cat dim.json
-   ```
-7. **Testar o worker** com o evento `{ "ano": 2026, "mes": 4 }`:
-   A primeira execução processa ~2.500 municípios e salva o checkpoint.
+### 2️⃣ Roles — `IAM → Roles → Create role`
+Em *Trusted entity type* escolha **AWS service → Lambda**: isso já gera sozinho o trust de
+`lambda.amazonaws.com` (é o conteúdo de [`iam/lambda-trust-policy.json`](../../iam/lambda-trust-policy.json)
+— você **não** precisa colar nada). Crie **duas** roles:
+
+| Role | Permissions a marcar (em *Add permissions*) |
+|------|---------------------------------------------|
+| `transparencia-ingestao-worker-role` | `worker-s3-secrets` **+** `AWSLambdaBasicExecutionRole` (logs) |
+| `transparencia-ingestao-dim-role` | `dim-s3-put` **+** `AWSLambdaBasicExecutionRole` (logs) |
+
+<details>
+<summary>📄 <code>iam/lambda-trust-policy.json</code> — trust gerado automaticamente (referência)</summary>
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "lambda.amazonaws.com" },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+</details>
+
+> 💡 A `dim` poderia reusar a role do worker (já tem `PutObject`), mas uma role própria
+> ensina **menor privilégio** — ela só consegue gravar em `raw/dim_municipios/*`.
+
+### 3️⃣ Lambdas — `Lambda → Create function`
+Primeiro a **Layer do `requests`** (o `boto3` já vem no runtime; o `requests` **não**). Dois caminhos —
+usamos o **A** (empacotar a nossa ensina como uma Layer funciona por dentro):
+- **A) Construir a sua (o que fazemos)** — gera o `.zip` localmente e sobe pela console:
+  ```bash
+  mkdir -p layer/python
+  ./.venv/Scripts/python.exe -m pip install requests -t layer/python
+  cd layer && zip -r ../requests-layer.zip python && cd ..
+  ```
+  `Lambda → Layers → Create layer` → suba `requests-layer.zip` → runtime **Python 3.14**.
+- **B) Layer pública Klayers (opção — bom de conhecer)** — não empacota nada, é só informar
+  o ARN (Python 3.14, us-east-1): `arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5`
+
+Agora as duas funções (*Create function → Author from scratch → Python 3.14*). Em
+**Change default execution role → Use an existing role**, selecione a role da etapa 2 — assim
+o console **não** cria role nova:
+
+**3a. Worker** — nome `transparencia-ingestao`, role `transparencia-ingestao-worker-role`.
+- Cole `src/lambda/handler.py`; handler = `handler.handler`.
+- *Layers → Add a layer:* *Custom layers* (a sua, A) **ou** *Specify an ARN* (Klayers, B).
+- *Configuration:* **Timeout 15 min**, **Memory 256 MB**.
+- *Environment variables:*
+  | Key | Value |
+  |-----|-------|
+  | `BUCKET` | `transparencia-datalake-us-east-1-<projectname>` |
+  | `SECRET_NAME` | `portal-transparencia/chave-api-dados` |
+
+**3b. Dim** — nome `transparencia-ingestao-dim`, role `transparencia-ingestao-dim-role`.
+- Cole `src/lambda/handler_dim.py`; handler = `handler_dim.handler`; mesma Layer.
+- *Configuration:* **Timeout 120s** ⚠️ (a dim chama o IBGE com `timeout=60`; os **3s** padrão
+  do console não cabem), **Memory 256 MB**.
+- *Environment variables:* só `BUCKET` (a API do IBGE é aberta, não precisa de `SECRET_NAME`).
+
+### 4️⃣ Executar — aba *Test* de cada função (**a ordem importa**)
+O worker lê a dim do S3, então rode a **dim primeiro**:
+1. **`transparencia-ingestao-dim`** → aba *Test* → *Event JSON* = `{}` → *Test*.
+   Popula `raw/dim_municipios/dim_municipios.csv` (5.571 linhas) com 1 chamada ao IBGE.
+2. **`transparencia-ingestao`** (worker) → aba *Test* → *Event JSON* = `{ "ano": 2026, "mes": 4 }` → *Test*.
+   A 1ª execução processa ~2.500 municípios e salva o checkpoint (`concluido: false`).
 
 ## 🔍 Validação
-- O retorno mostra `baixados`, `offset_final` e `concluido: false` (ainda faltam municípios).
-- `aws s3 ls s3://.../raw/bolsa_familia/ano=2026/mes=04/ --recursive` mostra JSONs novos.
-- `aws s3 cp s3://.../_checkpoints/202604.json -` mostra o offset salvo.
-- Rodar de novo **continua** de onde parou (e pula os já baixados).
+- No painel de resultado da aba *Test* o retorno mostra `baixados`, `offset_final` e
+  `concluido: false` (ainda faltam municípios).
+- No **console do S3**, `raw/bolsa_familia/ano=2026/mes=04/` já tem JSONs novos e
+  `_checkpoints/202604.json` guarda o offset salvo.
+- Clicar *Test* de novo no worker **continua** de onde parou (e pula os já baixados).
+- Pela CLI, se preferir: `aws s3 ls s3://.../raw/bolsa_familia/ano=2026/mes=04/ --recursive`
+  e `aws s3 cp s3://.../_checkpoints/202604.json -`.
 
 ## 💲 Custos / Free Tier
 - Lambda: **1M requisições/mês grátis** + 400k GB-s. Nossas ~14 invocações/mês → **zero**.
