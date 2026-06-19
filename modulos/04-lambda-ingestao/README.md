@@ -409,7 +409,7 @@ usamos o **A** (empacotar a nossa ensina como uma Layer funciona por dentro):
   Bloco completo (cria a `.venv`, instala o `requests` e zipa) — copie e cole de uma vez no Git Bash:
   ```bash
   mkdir -p ~/lambda-layer && cd ~/lambda-layer   # pasta nova; ajuste se quiser outro lugar
-  py -m venv .venv                                # cria a .venv (use 'python' se 'py' não existir)
+  python -m venv .venv                            # cria a .venv
   ./.venv/Scripts/python.exe -m pip install --upgrade pip
   mkdir -p layer/python
   ./.venv/Scripts/python.exe -m pip install requests -t layer/python
