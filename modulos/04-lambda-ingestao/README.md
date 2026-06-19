@@ -370,13 +370,6 @@ dê o **nome** indicado → *Create policy*.
 
 </details>
 
-> ⚠️ **Gotcha real:** o `s3:ListBucket` é no ARN do **bucket** (**sem** `/*`). Sem isso, um
-> `GetObject` num objeto que **ainda não existe** (o checkpoint na 1ª execução) retorna
-> **`AccessDenied`** em vez de **`NoSuchKey`** — e o código quebra, porque espera `NoSuchKey`
-> para "começar do zero".
-> 💡 `lambda:InvokeFunction` **não** entra aqui: quem reinvoca o worker em lote é o
-> **Step Functions** (Módulo 06), e essa permissão fica na role da máquina de estados.
-
 ### 2️⃣ Roles — `IAM → Roles → Create role`
 Em *Trusted entity type* escolha **AWS service → Lambda**: isso já gera sozinho o trust de
 `lambda.amazonaws.com` (é o conteúdo de [`iam/lambda-trust-policy.json`](../../iam/lambda-trust-policy.json)
