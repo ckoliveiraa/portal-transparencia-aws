@@ -405,13 +405,17 @@ Em *Trusted entity type* escolha **AWS service → Lambda**: isso já gera sozin
 Primeiro a **Layer do `requests`** (o `boto3` já vem no runtime; o `requests` **não**). Dois caminhos —
 usamos o **A** (empacotar a nossa ensina como uma Layer funciona por dentro):
 - **A) Construir a sua (o que fazemos)** — gera o `.zip` localmente e sobe pela console.
-  O `zip` não existe no Git Bash/Windows, então zipamos com o **próprio Python** (`shutil`):
+  O `zip` não existe no Git Bash/Windows, então zipamos com o **próprio Python** (`shutil`).
+  Bloco completo (cria a `.venv`, instala o `requests` e zipa) — copie e cole de uma vez no Git Bash:
   ```bash
+  mkdir -p ~/lambda-layer && cd ~/lambda-layer   # pasta nova; ajuste se quiser outro lugar
+  py -m venv .venv                                # cria a .venv (use 'python' se 'py' não existir)
+  ./.venv/Scripts/python.exe -m pip install --upgrade pip
   mkdir -p layer/python
   ./.venv/Scripts/python.exe -m pip install requests -t layer/python
   ./.venv/Scripts/python.exe -c "import shutil; shutil.make_archive('requests-layer','zip','layer')"
   ```
-  A última linha cria `requests-layer.zip` com a pasta **`python/`** na raiz (o que a Layer exige).
+  Gera `~/lambda-layer/requests-layer.zip` com a pasta **`python/`** na raiz (o que a Layer exige).
   `Lambda → Layers → Create layer` → suba `requests-layer.zip` → runtime **Python 3.14**.
 - **B) Layer pública Klayers (opção — bom de conhecer)** — não empacota nada, é só informar
   o ARN (Python 3.14, us-east-1): `arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5`
