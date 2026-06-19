@@ -315,7 +315,7 @@ Cada Lambda tem sua role: trust comum (`lambda.amazonaws.com`) + a managed
 troque `<projectname>` e `<conta>`).
 
 <details>
-<summary>📄 <code>iam/lambda-trust-policy.json</code> — trust (vale p/ worker e dim)</summary>
+<summary>📄 <code>iam/lambda-trust-policy.json</code> — trust (vale p/ <code>transparencia-ingestao-worker-role</code> e <code>transparencia-ingestao-dim-role</code>)</summary>
 
 ```json
 {
@@ -333,7 +333,7 @@ troque `<projectname>` e `<conta>`).
 </details>
 
 <details>
-<summary>📄 <code>iam/worker-role-policy.json</code> — inline do worker (S3 + Secrets)</summary>
+<summary>📄 <code>iam/worker-role-policy.json</code> — inline <code>worker-s3-secrets</code> da role <code>transparencia-ingestao-worker-role</code> (S3 + Secrets)</summary>
 
 ```json
 {
@@ -364,7 +364,7 @@ troque `<projectname>` e `<conta>`).
 </details>
 
 <details>
-<summary>📄 <code>iam/dim-role-policy.json</code> — inline do dim (só grava a dim)</summary>
+<summary>📄 <code>iam/dim-role-policy.json</code> — inline <code>dim-s3-put</code> da role <code>transparencia-ingestao-dim-role</code> (só grava a dim)</summary>
 
 ```json
 {
@@ -409,7 +409,7 @@ troque `<projectname>` e `<conta>`).
      |-----|-------|
      | `BUCKET` | `transparencia-datalake-us-east-1-<projectname>` |
      | `SECRET_NAME` | `portal-transparencia/chave-api-dados` |
-4. **Permissões (IAM Role `transparencia-ingestao-worker-role`)** — policy inline
+4. **Permissões (IAM Role `transparencia-ingestao-worker-role`)** — inline `worker-s3-secrets`
    ([`iam/worker-role-policy.json`](../../iam/worker-role-policy.json); trust em
    [`iam/lambda-trust-policy.json`](../../iam/lambda-trust-policy.json)) com:
    - `s3:GetObject`, `s3:PutObject` no `arn:aws:s3:::transparencia-datalake-us-east-1-<projectname>/*` (objetos);
@@ -425,7 +425,8 @@ troque `<projectname>` e `<conta>`).
 5. **Criar TAMBÉM a Lambda da dim** (`handler_dim.py`) — popula os municípios sem `cp`:
    - mesma Layer; handler = `handler_dim.handler`; **Timeout 120s** ⚠️ (a dim chama o IBGE com
      `timeout=60`; os **3s** padrão do console não cabem). Memory 256 MB.
-   - role: pode reusar a do worker (já tem `PutObject`) ou uma própria só com `s3:PutObject` em
+   - role: pode reusar a do worker (já tem `PutObject`) ou uma própria
+     `transparencia-ingestao-dim-role` com a inline `dim-s3-put` só com `s3:PutObject` em
      `raw/dim_municipios/*` ([`iam/dim-role-policy.json`](../../iam/dim-role-policy.json)).
      env var: `BUCKET` (não precisa de `SECRET_NAME`, a API do IBGE é aberta).
 6. **Ordem de execução importa** — o worker lê a dim do S3, então rode a dim **primeiro**:

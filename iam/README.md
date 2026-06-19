@@ -5,15 +5,15 @@ Policies de **menor privilégio** usadas no curso. Antes de aplicar, troque os p
 - `<projectname>` → sufixo do seu bucket (`transparencia-datalake-us-east-1-<projectname>`)
 - `<conta>` → ID da sua conta AWS (12 dígitos)
 
-| Arquivo | Role | Para que serve |
-|---------|------|----------------|
-| [`lambda-trust-policy.json`](lambda-trust-policy.json) | worker + dim | Trust (Lambda assume a role) |
-| [`worker-role-policy.json`](worker-role-policy.json) | worker | S3 Get/Put + ListBucket + ler o segredo |
-| [`dim-role-policy.json`](dim-role-policy.json) | dim | só `s3:PutObject` em `raw/dim_municipios/*` |
-| [`sfn-trust-policy.json`](sfn-trust-policy.json) | Step Functions | Trust (`states.amazonaws.com`) |
-| [`sfn-role-policy.json`](sfn-role-policy.json) | Step Functions | `lambda:InvokeFunction` no worker + `glue:StartJobRun/GetJobRun/BatchStopJobRun` |
-| [`glue-trust-policy.json`](glue-trust-policy.json) | Glue | Trust (`glue.amazonaws.com`) |
-| [`glue-role-policy.json`](glue-role-policy.json) | Glue | ler `raw`, escrever/apagar `curated*`, ListBucket |
+| Arquivo | Role (nome no IAM) | Inline policy | Para que serve |
+|---------|--------------------|---------------|----------------|
+| [`lambda-trust-policy.json`](lambda-trust-policy.json) | `transparencia-ingestao-worker-role` + `transparencia-ingestao-dim-role` | — (trust) | Trust (Lambda assume a role) |
+| [`worker-role-policy.json`](worker-role-policy.json) | `transparencia-ingestao-worker-role` | `worker-s3-secrets` | S3 Get/Put + ListBucket + ler o segredo |
+| [`dim-role-policy.json`](dim-role-policy.json) | `transparencia-ingestao-dim-role` | `dim-s3-put` | só `s3:PutObject` em `raw/dim_municipios/*` |
+| [`sfn-trust-policy.json`](sfn-trust-policy.json) | `transparencia-sfn-role` | — (trust) | Trust (`states.amazonaws.com`) |
+| [`sfn-role-policy.json`](sfn-role-policy.json) | `transparencia-sfn-role` | `sfn-invoke-glue` | `lambda:InvokeFunction` no worker + `glue:StartJobRun/GetJobRun/BatchStopJobRun` |
+| [`glue-trust-policy.json`](glue-trust-policy.json) | `transparencia-glue-role` | — (trust) | Trust (`glue.amazonaws.com`) |
+| [`glue-role-policy.json`](glue-role-policy.json) | `transparencia-glue-role` | `glue-s3-rw` | ler `raw`, escrever/apagar `curated*`, ListBucket |
 
 Managed policies que completam cada role:
 - **Lambdas** (worker/dim): `AWSLambdaBasicExecutionRole` (logs no CloudWatch).
