@@ -404,12 +404,14 @@ Em *Trusted entity type* escolha **AWS service → Lambda**: isso já gera sozin
 ### 3️⃣ Lambdas — `Lambda → Create function`
 Primeiro a **Layer do `requests`** (o `boto3` já vem no runtime; o `requests` **não**). Dois caminhos —
 usamos o **A** (empacotar a nossa ensina como uma Layer funciona por dentro):
-- **A) Construir a sua (o que fazemos)** — gera o `.zip` localmente e sobe pela console:
+- **A) Construir a sua (o que fazemos)** — gera o `.zip` localmente e sobe pela console.
+  O `zip` não existe no Git Bash/Windows, então zipamos com o **próprio Python** (`shutil`):
   ```bash
   mkdir -p layer/python
   ./.venv/Scripts/python.exe -m pip install requests -t layer/python
-  cd layer && zip -r ../requests-layer.zip python && cd ..
+  ./.venv/Scripts/python.exe -c "import shutil; shutil.make_archive('requests-layer','zip','layer')"
   ```
+  A última linha cria `requests-layer.zip` com a pasta **`python/`** na raiz (o que a Layer exige).
   `Lambda → Layers → Create layer` → suba `requests-layer.zip` → runtime **Python 3.14**.
 - **B) Layer pública Klayers (opção — bom de conhecer)** — não empacota nada, é só informar
   o ARN (Python 3.14, us-east-1): `arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p314-requests:5`
