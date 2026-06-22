@@ -21,7 +21,7 @@ Managed policies que completam cada role:
 
 Passo a passo de criação (UI e contexto): Lambda no [Módulo 04](../modulos/04-lambda-ingestao/README.md),
 Glue no [Módulo 05](../modulos/05-glue-transformacao/README.md), Step Functions no
-[Módulo 06](../modulos/06-step-functions-orquestracao/README.md).
+[Módulo 07](../modulos/07-step-functions-orquestracao/README.md).
 
 > ⚠️ Gotchas (todos reais do projeto):
 > - `s3:ListBucket` é no ARN do **bucket** (sem `/*`) — sem isso, `GetObject` em objeto

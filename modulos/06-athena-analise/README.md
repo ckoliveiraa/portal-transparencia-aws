@@ -1,4 +1,4 @@
-# Módulo 07 — Athena + Data Catalog — 🏆 Capstone
+# Módulo 06 — Athena + Data Catalog — 🏆 Capstone
 
 ## 🎯 Objetivo
 Catalogar os dados como **tabelas** (Glue Data Catalog) e responder a pergunta do projeto com SQL:
@@ -79,7 +79,7 @@ LIMIT 15;
 
 ```sql
 -- =====================================================================
--- Athena — Módulo 07 — Análise: top 15 que MAIS e que MENOS recebem
+-- Athena — Módulo 06 — Análise: top 15 que MAIS e que MENOS recebem
 -- =====================================================================
 -- Pré-requisitos:
 --   - Glue Catalog com as tabelas: bolsa_familia (curated) e dim_municipios
@@ -204,4 +204,4 @@ crie uma `dim_populacao(codigo_ibge, populacao)` e use a última query do `ranki
 ## 🧹 Limpeza
 - Esvazie `s3://.../athena-results/` de tempos em tempos (Módulo 09).
 
-➡️ Próximo: [Módulo 08 — Desafio final: auto-check de novos meses](../08-desafio-final-auto-check/README.md)
+➡️ Próximo: [Módulo 07 — Step Functions (orquestração)](../07-step-functions-orquestracao/README.md)

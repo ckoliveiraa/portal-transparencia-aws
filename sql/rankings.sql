@@ -1,5 +1,5 @@
 -- =====================================================================
--- Athena — Módulo 07 — Análise: top 15 que MAIS e que MENOS recebem
+-- Athena — Módulo 06 — Análise: top 15 que MAIS e que MENOS recebem
 -- =====================================================================
 -- Pré-requisitos:
 --   - Glue Catalog com as tabelas: bolsa_familia (curated) e dim_municipios

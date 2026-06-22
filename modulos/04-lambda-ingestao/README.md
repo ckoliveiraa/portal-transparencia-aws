@@ -22,7 +22,7 @@ gravando no S3, com **checkpoint**, **idempotência** e **retry de rate limit**.
 - `coletar_municipio()` chama a API com **retry/backoff** em `429`.
 - **Time budget**: `context.get_remaining_time_in_millis()` para parar antes do timeout e salvar o checkpoint.
 - Ao terminar os 5.571, grava `_SUCCESS` e retorna `concluido: true` — é esse campo que o
-  **Step Functions** (Módulo 06) usa para saber que pode parar o loop e seguir pro Glue.
+  **Step Functions** (Módulo 07) usa para saber que pode parar o loop e seguir pro Glue.
 
 <details>
 <summary>📄 <code>src/lambda/handler.py</code> — código completo (clique para copiar)</summary>

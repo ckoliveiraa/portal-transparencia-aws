@@ -1,4 +1,4 @@
-# Módulo 06 — Step Functions (orquestração)
+# Módulo 07 — Step Functions (orquestração)
 
 ## 🎯 Objetivo
 Orquestrar a ingestão de ponta a ponta com uma **máquina de estados**: reinvocar a Lambda
@@ -203,4 +203,4 @@ aws stepfunctions start-execution \
 - Não há agendador rodando para sempre: a execução termina sozinha. Para remover de vez:
   Step Functions → *Delete state machine* (Módulo 09).
 
-➡️ Próximo: [Módulo 07 — Athena + Data Catalog](../07-athena-analise/README.md)
+➡️ Próximo: [Módulo 08 — Desafio final: auto-check de novos meses](../08-desafio-final-auto-check/README.md)

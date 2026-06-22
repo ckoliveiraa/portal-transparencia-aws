@@ -5,7 +5,7 @@ Lê os JSONs brutos do Bolsa Família na camada RAW, achata a estrutura
 aninhada, normaliza tipos e grava em Parquet na camada CURATED,
 particionado por ano/mes. Ao final, o PRÓPRIO job registra as partições
 novas no Glue Data Catalog (ALTER TABLE ... ADD PARTITION) — sem crawler
-e sem MSCK manual. Assim o Athena (Módulo 07) já enxerga os dados.
+e sem MSCK manual. Assim o Athena (Módulo 06) já enxerga os dados.
 
 RAW     : s3://BUCKET/raw/bolsa_familia/ano=*/mes=*/uf=*/municipio=*.json
 CURATED : s3://BUCKET/curated/bolsa_familia/ano=*/mes=*/  (Parquet)
@@ -16,7 +16,7 @@ Parâmetros do Job (--KEY value):
 Requer o Job parameter --enable-glue-datacatalog (faz o Spark usar o Glue
 Data Catalog como metastore, habilitando o ALTER TABLE ADD PARTITION).
 A tabela transparencia.bolsa_familia precisa existir (criada via DDL,
-Módulo 07) — o job só ADICIONA partições, herdando o schema da tabela.
+Módulo 06) — o job só ADICIONA partições, herdando o schema da tabela.
 
 Observação didática: cada arquivo RAW contém um array com 1 objeto
 (o registro daquele município/mês). Usamos explode() para transformar
@@ -106,6 +106,6 @@ try:
     print(f"Catalogo atualizado: {len(particoes)} particao(oes) -> {particoes}")
 except Exception as e:  # noqa: BLE001 — não falhar o job por causa do catálogo
     print(f"AVISO: nao registrei particoes (a tabela {DATABASE}.{TABLE} existe? "
-          f"crie via DDL no Modulo 07): {e}")
+          f"crie via DDL no Modulo 06): {e}")
 
 job.commit()

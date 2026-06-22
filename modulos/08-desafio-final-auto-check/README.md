@@ -36,11 +36,11 @@ EventBridge Scheduler           Lambda "detector"                 Step Functions
 ```
 
 Reaproveita **tudo** que você já construiu: a state machine `transparencia-ingestao`
-(Módulo 06) faz o trabalho pesado. O detector só decide **se** e **quando** acioná-la.
+(Módulo 07) faz o trabalho pesado. O detector só decide **se** e **quando** acioná-la.
 
 ## ✅ Pré-requisitos
-- Módulos 04–07 concluídos (worker, Glue, state machine, Athena).
-- A state machine `transparencia-ingestao` existente e testada (Módulo 06).
+- Módulos 04–07 concluídos (worker, Glue, Athena, state machine).
+- A state machine `transparencia-ingestao` existente e testada (Módulo 07).
 
 ## 📋 Requisitos (o que entregar)
 1. **Lambda `transparencia-detector-mes`** que, a cada invocação:
