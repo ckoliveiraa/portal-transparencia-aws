@@ -140,10 +140,32 @@ A role `transparencia-sfn-role` usa trust em `states.amazonaws.com` + uma policy
       "Effect": "Allow",
       "Action": ["glue:StartJobRun", "glue:GetJobRun", "glue:BatchStopJobRun"],
       "Resource": "arn:aws:glue:us-east-1:<conta>:job/transparencia-glue-bolsa-familia"
+    },
+    {
+      "Sid": "HabilitarLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogDelivery",
+        "logs:GetLogDelivery",
+        "logs:UpdateLogDelivery",
+        "logs:DeleteLogDelivery",
+        "logs:ListLogDeliveries",
+        "logs:PutResourcePolicy",
+        "logs:DescribeResourcePolicies",
+        "logs:DescribeLogGroups"
+      ],
+      "Resource": "*"
     }
   ]
 }
 ```
+
+> 🪵 O statement `HabilitarLogs` é o que permite enviar logs da execução para o CloudWatch
+> Logs. Sem ele, ao deixar o **Logging** ligado na criação você recebe
+> `AccessDeniedException: The state machine IAM Role is not authorized to access the Log
+> Destination`. As ações de *log delivery* **não aceitam recurso específico** — têm que ficar
+> em `"Resource": "*"` (exigência da AWS). Se preferir não habilitar logs, basta deixar o
+> *Log level* em **OFF** na criação e este statement é dispensável.
 
 </details>
 
@@ -152,11 +174,15 @@ A role `transparencia-sfn-role` usa trust em `states.amazonaws.com` + uma policy
    com permissão para (JSONs acima):
    - `lambda:InvokeFunction` no `transparencia-ingestao-worker`;
    - `glue:StartJobRun`, `glue:GetJobRun`, `glue:BatchStopJobRun` no job (o `.sync` precisa do
-     `GetJobRun` para acompanhar).
+     `GetJobRun` para acompanhar);
+   - as ações de *log delivery* (`logs:CreateLogDelivery` etc., statement `HabilitarLogs`) —
+     necessárias só se você for **ligar o Logging** no passo 3.
 2. **Criar a state machine**: Step Functions → *State machines* → *Create* → **Standard**
    (não Express — o fluxo dura horas).
 3. 🖱️ Cole o ASL de `stepfunctions/ingestao_bolsa_familia.asl.json` (troque `<projectname>` no
-   `--BUCKET`). Nome: `transparencia-ingestao`. Associe a role do passo 1.
+   `--BUCKET`). Nome: `transparencia-ingestao`. Associe a role do passo 1. Em **Logging**, deixe
+   *Log level* como quiser: **OFF** dispensa o statement `HabilitarLogs`; **ALL/ERROR** exige a
+   role com esse statement (senão dá `AccessDeniedException ... Log Destination`).
 4. **Executar**: *Start execution* com o input:
    ```json
    { "ano": 2026, "mes": 4 }

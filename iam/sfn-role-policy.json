@@ -12,6 +12,21 @@
       "Effect": "Allow",
       "Action": ["glue:StartJobRun", "glue:GetJobRun", "glue:BatchStopJobRun"],
       "Resource": "arn:aws:glue:us-east-1:<conta>:job/transparencia-glue-bolsa-familia"
+    },
+    {
+      "Sid": "HabilitarLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogDelivery",
+        "logs:GetLogDelivery",
+        "logs:UpdateLogDelivery",
+        "logs:DeleteLogDelivery",
+        "logs:ListLogDeliveries",
+        "logs:PutResourcePolicy",
+        "logs:DescribeResourcePolicies",
+        "logs:DescribeLogGroups"
+      ],
+      "Resource": "*"
     }
   ]
 }
