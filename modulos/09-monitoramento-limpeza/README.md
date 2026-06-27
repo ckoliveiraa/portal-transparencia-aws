@@ -1,24 +1,17 @@
-# Módulo 09 — Monitoramento e limpeza
+# Módulo 09 — Limpeza (teardown)
 
 ## 🎯 Objetivo
-Observar o pipeline (logs/métricas) e **desmontar tudo** para não gerar cobranças.
+**Desmontar tudo** que você criou no curso para não gerar cobranças.
 
 ## 🧠 Conceitos
-- **CloudWatch Logs**: cada Lambda/Glue job escreve logs em um *log group*.
-- **CloudWatch Metrics/Alarms**: métricas (invocações, erros, duração) e alarmes.
-- **Observabilidade**: saber se o pipeline rodou, falhou ou está caro — antes do cliente (ou da fatura) avisar.
 - **Teardown**: remover recursos é parte do ciclo; recursos esquecidos = conta surpresa.
+- **O que cobra parado vs. por uso**: alguns serviços só cobram quando rodam; outros cobram só por existir (ver tabela abaixo).
+- **Ordem importa**: derrube primeiro o que **fica rodando/sondando**, depois o resto.
 
 ## ✅ Pré-requisitos
 - Ter rodado os módulos anteriores.
 
-## 🪜 Parte A — Monitoramento
-1. **Logs da Lambda**: CloudWatch → *Log groups* → `/aws/lambda/SUA-FUNCAO`. Veja o JSON de progresso de cada lote.
-2. **Métricas**: CloudWatch → *Metrics* → `Lambda` → `Errors`, `Duration`, `Invocations`.
-3. **Alarme de erro** (opcional): crie um alarme em `Errors > 0` que te notifica por e-mail.
-4. **Billing**: confira *Billing* → *Cost Explorer* para ver o gasto por serviço.
-
-## 🧹 Parte B — Limpeza
+## 🧹 Limpeza
 
 ### O que realmente gera cobrança? (priorize estes)
 | Recurso | Cobra mesmo parado? | Por quê |
@@ -84,7 +77,7 @@ aws iam delete-role --role-name transparencia-sfn-role
 ### B3 — Faxina final
 - **CloudWatch Logs**: apague os *log groups* `/aws/lambda/*` e `/aws-glue/*` do projeto (ou
   defina retenção curta) para não acumular armazenamento.
-- **Alarmes/SNS**: remova alarmes e tópicos que criou no monitoramento — **mas mantenha o alarme de billing!**
+- **Alarmes/SNS**: remova alarmes e tópicos que tenha criado — **mas mantenha o alarme de billing!**
 
 ## 🔍 Validação
 - `aws s3 ls | grep transparencia` não retorna nada.

@@ -160,5 +160,5 @@ ao final:
   todo dia para sempre.
 - Remova a Lambda detector e a role no teardown (Módulo 09).
 
-➡️ Próximo: [Módulo 09 — Monitoramento & limpeza](../09-monitoramento-limpeza/README.md)
+➡️ Próximo: [Módulo 09 — Limpeza (teardown)](../09-monitoramento-limpeza/README.md)
 ⬅️ Voltar ao [índice do curso](../../README.md)

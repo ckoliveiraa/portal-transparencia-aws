@@ -29,7 +29,7 @@ Detalhes da arquitetura e glossário dos serviços em [`docs/arquitetura.md`](do
 | 06 | [Athena + Data Catalog](modulos/06-athena-analise/README.md) | Metastore (DDL), SQL serverless; **capstone: top 15 que mais/menos recebem** |
 | 07 | [Step Functions](modulos/07-step-functions-orquestracao/README.md) | Orquestração: loop de lotes até fechar o mês + dispara o Glue, e **para sozinho** |
 | 08 🎓 | [Desafio final — auto-check de novos meses](modulos/08-desafio-final-auto-check/README.md) | **Implementação livre:** detectar mês novo na API e disparar o pipeline sozinho (Scheduler + detector + StartExecution) |
-| 09 | [Monitoramento & limpeza](modulos/09-monitoramento-limpeza/README.md) | CloudWatch, custos e **teardown** para não gerar cobrança |
+| 09 | [Limpeza (teardown)](modulos/09-monitoramento-limpeza/README.md) | O que cobra, em que ordem remover e **teardown** completo para não gerar cobrança |
 
 ## Estrutura do repositório
 
