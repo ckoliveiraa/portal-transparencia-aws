@@ -1,8 +1,50 @@
 # Módulo 08 — 🎓 Desafio final: auto-check de novos meses
 
-> **Formato diferente dos outros módulos.** Aqui não há passo a passo pronto: é um
-> **desafio de implementação** para você fechar o curso. Damos o objetivo, a arquitetura
-> sugerida, um esqueleto com `TODO`s e os critérios de aceite — **o código é por sua conta**.
+> **Formato diferente dos outros módulos.** Aqui não há passo a passo pronto nem código de
+> partida: é um **desafio de implementação** para você fechar o curso. Damos o objetivo, a
+> arquitetura sugerida, os requisitos e os critérios de aceite — **a Lambda, a role/policy e o
+> agendador são por sua conta**.
+
+## 🎫 Card do desafio (estilo Jira)
+
+> Trate este desafio como um ticket que caiu no seu board. Leia, estime e implemente.
+
+| | |
+|---|---|
+| **Tipo** | 🟢 Story |
+| **Chave** | `DATA-108` |
+| **Título** | Disparar o pipeline de ingestão automaticamente quando a API publica um mês novo |
+| **Épico** | Automação do pipeline de transparência |
+| **Prioridade** | 🔼 High |
+| **Story points** | 5 |
+| **Sprint** | Sprint final do curso |
+| **Responsável** | _você_ |
+| **Labels** | `lambda` · `iam` · `eventbridge` · `step-functions` · `idempotência` |
+
+**Descrição**
+> Como time de dados, queremos que o pipeline de Bolsa Família rode **sozinho** assim que um novo
+> mês fica disponível na API do Portal da Transparência, **sem** ninguém precisar disparar o
+> `StartExecution` na mão e **sem** reprocessar meses já fechados.
+
+**Contexto técnico**
+- A API **não tem webhook** — é preciso **sondar** (poll) e reagir quando o dado aparecer.
+- Já existe a state machine `transparencia-ingestao` (Módulo 07) que faz todo o trabalho pesado.
+- Este ticket entrega só o **gatilho inteligente**, não mexe no pipeline existente.
+
+**Tarefas (subtasks)**
+- [ ] `DATA-108a` — Criar a **Lambda detector** que decide se há mês novo e dispara a state machine.
+- [ ] `DATA-108b` — Sondar a API com um **município de referência** (escolher cidade + `codigoIbge`).
+- [ ] `DATA-108c` — Criar **role + policy IAM** da Lambda com permissões mínimas (sem `*`).
+- [ ] `DATA-108d` — Criar o **EventBridge Scheduler** (cron diário) + role para invocar a Lambda.
+- [ ] `DATA-108e` — Garantir **idempotência** (rodar N× no dia ⇒ no máximo 1 execução por mês).
+
+**Critérios de aceite (Definition of Done)** → ver seção [🔍 Critérios de aceite](#-critérios-de-aceite) abaixo.
+
+**Fora de escopo**
+- Alterar a state machine ou o worker existentes.
+- Notificações, backfill de vários meses e troca de polling por evento → ver [⭐ Extensões](#-extensões-se-quiser-ir-além).
+
+---
 
 ## 🎯 Objetivo
 Hoje o pipeline é disparado **na mão**: alguém roda `StartExecution` com `{ "ano": 2026, "mes": 4 }`.
@@ -43,111 +85,46 @@ Reaproveita **tudo** que você já construiu: a state machine `transparencia-ing
 - A state machine `transparencia-ingestao` existente e testada (Módulo 07).
 
 ## 📋 Requisitos (o que entregar)
-1. **Lambda `transparencia-detector-mes`** que, a cada invocação:
-   - descobre o **último mês processado** (sugestão: listar os marcadores
-     `raw/bolsa_familia/ano=*/mes=*/_SUCCESS` no S3 e pegar o maior; alternativa: um arquivo de
-     estado `_state/ultimo_mes.json`);
-   - calcula o **mês candidato** = último + 1 (cuidado com a virada de ano: dez → jan);
-   - **sonda** a API para esse `mesAno` com um município-sentinela (ex.: São Paulo,
-     `codigoIbge=3550308`, que sempre tem dados);
-   - **decide**: se a sonda voltar **não-vazia** e o mês ainda não tiver `_SUCCESS` e não houver
-     execução em andamento → `StartExecution` da state machine com `{ano, mes}`;
-   - caso contrário, **não faz nada** e loga o motivo.
-2. **EventBridge Scheduler `transparencia-detector-diario`** que invoca o detector numa cadência
-   sua (diária é suficiente — o dado muda no máximo 1×/mês).
-3. **IAM**: role do detector com o **mínimo** necessário (ver abaixo).
+Este é o seu desafio de implementação — **a partir daqui o código é todo seu**. O que precisa existir
+ao final:
+
+1. **Uma Lambda detector** (`transparencia-detector-mes`) que, a cada invocação, decide sozinha se
+   há um mês novo para processar e, em caso afirmativo, dispara a state machine
+   `transparencia-ingestao` com `{ano, mes}`. Pense em como ela vai:
+   - descobrir **qual foi o último mês já processado**;
+   - calcular **qual seria o próximo mês candidato** (atenção à virada de ano: dez → jan);
+   - **sondar a API** para checar se esse mês já está publicado, usando **um município de
+     referência** que você sabe que sempre tem dados quando o mês existe (escolha qual e descubra
+     o `codigoIbge` dele);
+   - só então **disparar** — ou **não fazer nada** e registrar o motivo no log.
+2. **Uma role + uma policy IAM** para essa Lambda, com o **mínimo de permissões** necessário para
+   ela fazer o trabalho acima (pense: o que ela lê? o que ela chama? onde ela loga?). Nada de `*`
+   em recursos.
+3. **Um agendador** (EventBridge Scheduler) que invoque o detector periodicamente — diário é o
+   suficiente, já que o dado muda no máximo 1×/mês — com a role que esse agendador precisa para
+   invocar a Lambda.
 4. **Idempotência**: rodar o detector 10× no mesmo dia **não** pode gerar 10 execuções nem
-   reprocessar um mês já fechado.
+   reprocessar um mês já fechado. Descubra como garantir isso.
 
-## 🧱 Esqueleto (preencha os `TODO`)
-Crie `src/lambda/handler_detector.py`. O esqueleto abaixo é só o andaime — a lógica é sua:
+> 💡 **Dica de idempotência (sem entregar a solução):** em state machine **Standard**, dois
+> `StartExecution` com o **mesmo `name`** falham no segundo (`ExecutionAlreadyExists`). Há aí uma
+> forma elegante de se proteger de disparo duplicado no mesmo mês — pense em como usar isso a seu favor.
 
-```python
-"""Detector de mês novo: sonda a API e dispara a state machine quando há dados novos."""
-import os, json, boto3, requests
-
-BASE_URL = "https://api.portaldatransparencia.gov.br/api-de-dados"
-ENDPOINT = "/novo-bolsa-familia-por-municipio"
-SENTINELA = "3550308"  # São Paulo: sempre tem dados quando o mês existe
-
-s3   = boto3.client("s3")
-sfn  = boto3.client("stepfunctions")
-secrets = boto3.client("secretsmanager")
-
-BUCKET   = os.environ["BUCKET"]
-SM_ARN   = os.environ["STATE_MACHINE_ARN"]
-SECRET_NAME = os.environ.get("SECRET_NAME", "portal-transparencia/chave-api-dados")
-
-
-def ultimo_mes_processado() -> tuple[int, int]:
-    """TODO: varrer os _SUCCESS em raw/bolsa_familia/ e retornar (ano, mes) do mais recente.
-    Dica: s3.get_paginator('list_objects_v2') com Prefix='raw/bolsa_familia/' e Delimiter,
-    ou liste as chaves '.../_SUCCESS' e parseie ano=/mes= do path."""
-    raise NotImplementedError
-
-
-def proximo_mes(ano: int, mes: int) -> tuple[int, int]:
-    """TODO: (ano, mes) + 1 mês, virando o ano em dezembro."""
-    raise NotImplementedError
-
-
-def mes_existe_na_api(mes_ano: str) -> bool:
-    """TODO: 1 GET com codigoIbge=SENTINELA; True se a resposta (lista) for não-vazia.
-    Header chave-api-dados vem do Secrets Manager (reaproveite a lógica do worker)."""
-    raise NotImplementedError
-
-
-def ja_concluido(ano: int, mes: int) -> bool:
-    """TODO: head_object no _SUCCESS daquele mês -> True se já existe."""
-    raise NotImplementedError
-
-
-def ha_execucao_rodando() -> bool:
-    """TODO: sfn.list_executions(statusFilter='RUNNING') no SM_ARN -> True se houver alguma."""
-    raise NotImplementedError
-
-
-def handler(event, context):
-    ano, mes = proximo_mes(*ultimo_mes_processado())
-    mes_ano = f"{ano}{mes:02d}"
-
-    # TODO: combine as guardas. Só dispara se: existe na API, não concluído, nada rodando.
-    if ja_concluido(ano, mes) or ha_execucao_rodando():
-        print(json.dumps({"acao": "skip", "motivo": "ja_processado_ou_em_execucao", "mes_ano": mes_ano}))
-        return {"disparado": False}
-
-    if not mes_existe_na_api(mes_ano):
-        print(json.dumps({"acao": "skip", "motivo": "mes_ainda_nao_publicado", "mes_ano": mes_ano}))
-        return {"disparado": False}
-
-    sfn.start_execution(
-        stateMachineArn=SM_ARN,
-        name=f"auto-{mes_ano}",  # nome determinístico = StartExecution idempotente no mesmo mês
-        input=json.dumps({"ano": ano, "mes": mes}),
-    )
-    print(json.dumps({"acao": "start", "mes_ano": mes_ano}))
-    return {"disparado": True, "mes_ano": mes_ano}
-```
-
-> 💡 **Truque de idempotência:** em state machine **Standard**, dois `StartExecution` com o
-> **mesmo `name`** dão `ExecutionAlreadyExists` (o segundo falha de propósito). Usar
-> `name=f"auto-{mes_ano}"` já te protege de disparo duplicado no mesmo mês — trate essa exceção
-> como "já disparei, tudo certo".
-
-## 🔐 IAM (least privilege)
-Role do detector (`transparencia-detector-role`) precisa só de:
-- `s3:ListBucket` + `s3:GetObject` no bucket (achar `_SUCCESS`);
-- `secretsmanager:GetSecretValue` no segredo da chave;
-- `states:StartExecution` **na** `transparencia-ingestao` + `states:ListExecutions`;
-- logs do CloudWatch.
-
-E o **Scheduler** precisa de uma role com `lambda:InvokeFunction` no detector.
+## 🧰 Pistas (sem código)
+- **Último mês processado:** você já grava um marcador `_SUCCESS` em `raw/bolsa_familia/ano=*/mes=*/`
+  a cada mês concluído. Dá para descobrir o último a partir disso (ou manter um arquivo de estado próprio).
+- **Sondar a API:** 1 único `GET` no endpoint por município, com o `codigoIbge` da sua cidade de
+  referência. Resposta não-vazia ⇒ o mês existe. A chave da API você já lê do Secrets Manager no worker
+  (Módulo 04) — reaproveite essa lógica.
+- **Não disparar à toa:** antes de chamar `StartExecution`, vale checar se o mês já tem `_SUCCESS` e
+  se já não há uma execução em andamento na state machine.
 
 ## 🪜 Roteiro sugerido
-1. Escreva e teste o detector **localmente** (ou com um `mes` forçado pelo `event`) antes de subir.
-2. Faça o deploy da Lambda (mesma receita do Módulo 04: zip + Layer `requests`, env
-   `BUCKET`/`STATE_MACHINE_ARN`/`SECRET_NAME`).
-3. Crie o **EventBridge Scheduler** apontando para o detector (cron diário; fuso à sua escolha).
+1. Escreva e teste a lógica do detector **localmente** (ou com um `mes` forçado pelo `event`) antes de subir.
+2. Crie a **role + policy** da Lambda (least privilege) e faça o deploy do detector (mesma receita do
+   Módulo 04: zip + Layer `requests`, variáveis de ambiente que você precisar).
+3. Crie o **EventBridge Scheduler** apontando para o detector (cron diário; fuso à sua escolha) com a
+   role que ele precisa para invocar a Lambda.
 4. Force um cenário de teste (veja abaixo) e observe a execução nascer sozinha.
 
 ## 🔍 Critérios de aceite
@@ -156,7 +133,7 @@ E o **Scheduler** precisa de uma role com `lambda:InvokeFunction` no detector.
 - [ ] Rodando o detector **de novo** no mesmo mês: **não** cria execução nova (idempotente).
 - [ ] Com o mês candidato **ainda não publicado**, o detector loga `mes_ainda_nao_publicado` e
       **não** dispara.
-- [ ] A role do detector **não** tem `*` em recursos — só o que está na seção IAM.
+- [ ] A role do detector **não** tem `*` em recursos — só as permissões mínimas que ela usa de fato.
 - [ ] Teste da virada de ano: `ultimo = 2026-12` ⇒ candidato `2027-01`.
 
 > **Como simular "mês novo" sem esperar a API:** apague (ou renomeie) o `_SUCCESS` e o
