@@ -30,20 +30,27 @@
 > urgente: enquanto existir, ele invoca a Lambda detector todos os dias **para sempre**.
 
 ```bash
+# Preencha com os nomes que VOCÊ criou no desafio:
+SCHEDULER_NAME="<nome-do-seu-scheduler>"        # ex.: transparencia-detector-diario
+DETECTOR_FN="<nome-da-sua-lambda-detector>"     # ex.: transparencia-detector-mes
+DETECTOR_ROLE="<nome-da-role-da-lambda>"        # ex.: transparencia-detector-role
+DETECTOR_POLICY="<nome-da-policy-inline>"       # ex.: transparencia-detector-policy
+SCHEDULER_ROLE="<nome-da-role-do-scheduler>"    # ex.: transparencia-detector-scheduler-role
+
 # 1) Scheduler do detector (PARA o polling diário — faça isto antes de tudo)
-aws scheduler delete-schedule --name transparencia-detector-diario
+aws scheduler delete-schedule --name "$SCHEDULER_NAME"
 
 # 2) Lambda detector
-aws lambda delete-function --function-name transparencia-detector-mes
+aws lambda delete-function --function-name "$DETECTOR_FN"
 
-# 3) IAM do desafio — role/policy da Lambda detector + role do Scheduler
-#    (ajuste os nomes para os que você criou). Primeiro solte as policies, depois apague as roles.
-aws iam delete-role-policy --role-name transparencia-detector-role --policy-name transparencia-detector-policy
-aws iam delete-role --role-name transparencia-detector-role
-aws iam delete-role --role-name transparencia-detector-scheduler-role
+# 3) IAM do desafio — role/policy da Lambda detector + role do Scheduler.
+#    Primeiro solte as policies, depois apague as roles.
+aws iam delete-role-policy --role-name "$DETECTOR_ROLE" --policy-name "$DETECTOR_POLICY"
+aws iam delete-role --role-name "$DETECTOR_ROLE"
+aws iam delete-role --role-name "$SCHEDULER_ROLE"
 # Se você usou policies gerenciadas (managed) em vez de inline:
-#   aws iam detach-role-policy --role-name <role> --policy-arn <arn>
-#   aws iam delete-policy --policy-arn <arn>
+#   aws iam detach-role-policy --role-name "$DETECTOR_ROLE" --policy-arn <arn-da-policy>
+#   aws iam delete-policy --policy-arn <arn-da-policy>
 ```
 
 ### B2 — Recursos do pipeline principal (todos os alunos)
@@ -67,11 +74,11 @@ aws secretsmanager delete-secret --secret-id portal-transparencia/chave-api-dado
 aws s3 rm s3://transparencia-datalake-us-east-1-<projectname> --recursive
 aws s3 rb s3://transparencia-datalake-us-east-1-<projectname>
 
-# 9) IAM do pipeline — roles do worker, do Glue e da state machine (Módulos 04/06/07)
-#    Solte as policies inline e apague as roles (ajuste os nomes aos seus).
-aws iam delete-role --role-name transparencia-lambda-role
-aws iam delete-role --role-name transparencia-glue-role
-aws iam delete-role --role-name transparencia-sfn-role
+# 9) IAM do pipeline — roles do worker, do Glue e da state machine (Módulos 04/06/07).
+#    Use os nomes que você criou (liste com: aws iam list-roles | grep transparencia).
+aws iam delete-role --role-name "<role-da-lambda-worker>"   # ex.: transparencia-lambda-role
+aws iam delete-role --role-name "<role-do-glue>"            # ex.: transparencia-glue-role
+aws iam delete-role --role-name "<role-da-state-machine>"   # ex.: transparencia-sfn-role
 ```
 
 ### B3 — Faxina final
